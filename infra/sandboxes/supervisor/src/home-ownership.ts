@@ -82,8 +82,10 @@ async function assertWritableEntry(
     throw new Error(`computer home ${root} must be a directory`);
   }
 
+  // Node reports NTFS directories as 0666 (no execute bits), while Docker Desktop
+  // bind mounts stay writable for the sandbox uid. Keep the full check on macOS.
   const usable = stat.isDirectory()
-    ? hasPermissions(stat, uid, gid, 0b111)
+    ? hasPermissions(stat, uid, gid, process.platform === "win32" ? 0b110 : 0b111)
     : regularFileIsUsable(stat, uid, gid);
   if (!usable) {
     throw writabilityError(target, root, uid, gid);
