@@ -13,6 +13,8 @@ const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const SESSION_SECRET =
   process.env.PORTAL_SESSION_SECRET || "cobri-demo-portal-fixture-secret";
 const MAX_BODY_BYTES = 64 * 1024;
+const UNREAD_COUNT = 3;
+const sessions = new Map();
 
 const escapeHtml = (value) =>
   String(value).replace(
@@ -80,12 +82,13 @@ function sendHtml(res, status, html) {
   res.end(html);
 }
 
-function sendJson(res, status, value) {
+function sendJson(res, status, value, headers = {}) {
   const body = `${JSON.stringify(value, null, 2)}\n`;
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
     "Content-Length": Buffer.byteLength(body),
     "Cache-Control": "no-store",
+    ...headers,
   });
   res.end(body);
 }
@@ -159,6 +162,7 @@ function readSession(req) {
     ) {
       return null;
     }
+    if (!sessions.has(token)) return null;
     return data;
   } catch {
     return null;
@@ -257,6 +261,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       const token = createSessionToken(ACCOUNT_EMAIL);
+      sessions.set(token, { email: ACCOUNT_EMAIL, createdAt: Date.now() });
       redirect(res, "/inbox", { "Set-Cookie": sessionCookie(token) });
       return;
     }
@@ -275,7 +280,29 @@ const server = http.createServer(async (req, res) => {
       (req.method === "GET" || req.method === "POST") &&
       path === "/logout"
     ) {
+      const token = parseCookies(req.headers.cookie)[COOKIE_NAME];
+      if (token) sessions.delete(token);
       redirect(res, "/", { "Set-Cookie": CLEAR_COOKIE });
+      return;
+    }
+
+    if (req.method === "GET" && path === "/__state") {
+      sendJson(res, 200, {
+        service: "customer-portal",
+        sessions: sessions.size,
+        unread: UNREAD_COUNT,
+      });
+      return;
+    }
+
+    if (req.method === "POST" && path === "/__reset") {
+      sessions.clear();
+      sendJson(
+        res,
+        200,
+        { ok: true, sessions: 0, unread: UNREAD_COUNT },
+        { "Set-Cookie": CLEAR_COOKIE },
+      );
       return;
     }
 

@@ -13,13 +13,19 @@ const INITIAL_CHANGELOG = [
   { date: "2026-10-07", title: "企业版支持 SSO 单点登录" },
 ];
 
-const state = {
-  company: "云图智能",
-  teamPrice: 199,
-  enterprisePrice: 399,
-  changelog: INITIAL_CHANGELOG.map((entry) => ({ ...entry })),
-  mutated: false,
-};
+let state;
+
+function resetState() {
+  state = {
+    company: "云图智能",
+    teamPrice: 199,
+    enterprisePrice: 399,
+    changelog: INITIAL_CHANGELOG.map((entry) => ({ ...entry })),
+    mutated: false,
+  };
+}
+
+resetState();
 
 const escapeHtml = (value) =>
   String(value).replace(
@@ -195,6 +201,25 @@ const server = http.createServer((req, res) => {
   }
   if (req.method === "GET" && path === "/__fixture/state") {
     sendJson(res, 200, pricingPayload());
+    return;
+  }
+  if (req.method === "GET" && path === "/__state") {
+    sendJson(res, 200, {
+      service: "competitor-site",
+      teamPrice: state.teamPrice,
+      enterprisePrice: state.enterprisePrice,
+      changelogCount: state.changelog.length,
+      mutated: state.mutated,
+    });
+    return;
+  }
+  if (req.method === "POST" && path === "/__reset") {
+    resetState();
+    sendJson(res, 200, {
+      ok: true,
+      teamPrice: state.teamPrice,
+      changelogCount: state.changelog.length,
+    });
     return;
   }
 
