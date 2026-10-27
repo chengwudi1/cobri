@@ -22,6 +22,13 @@ http://host.docker.internal:4313
 
 Linux Docker 需要在容器上显式加主机映射，例如 `--add-host=host.docker.internal:host-gateway`，或者直接使用宿主机局域网 IP。
 
+2026-10-28 实测：四个假服务以 `0.0.0.0` 启动后，在运行中的 `rakazo/computer:local` Bot 容器里执行：
+
+- `curl http://host.docker.internal:4310/pricing` → HTTP 200，响应片段 `<title>定价 · 云图智能</title>`。
+- `curl http://host.docker.internal:4312/messages` → HTTP 200，响应片段 `"id": "m1"`、`"subject": "远山科技客户会邀"`。
+
+`host.docker.internal` 已通，本次不需要退回 Docker 网关地址；不同环境的网关可用 `ip route` 或 `/proc/net/route` 查看。测试期间假服务保持运行，未重启 Rakazo。
+
 Rakazo 侧还需要：
 
 - API 和 worker 两边都设置 `MCP_ALLOW_PRIVATE_ENDPOINT=true`，然后重启两个进程；只设 API 不够。
