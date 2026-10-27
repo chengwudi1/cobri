@@ -1,0 +1,52 @@
+export const LOCALES = ["en", "de", "ko", "zh", "ja"] as const;
+
+export type Locale = (typeof LOCALES)[number];
+
+export const DEFAULT_LOCALE: Locale = "en";
+
+export const LOCALE_LABELS: Record<Locale, string> = {
+  en: "English",
+  de: "Deutsch",
+  ko: "한국어",
+  zh: "简体中文",
+  ja: "日本語",
+};
+
+export const LOCALE_OG: Record<Locale, string> = {
+  en: "en_US",
+  de: "de_DE",
+  ko: "ko_KR",
+  zh: "zh_CN",
+  ja: "ja_JP",
+};
+
+export const LOCALE_HTML_LANG: Record<Locale, string> = {
+  en: "en",
+  de: "de",
+  ko: "ko",
+  zh: "zh-CN",
+  ja: "ja",
+};
+
+/** BCP 47 tags shared by page hreflang links and the sitemap. */
+export const LOCALE_HREFLANG: Record<Locale, string> = {
+  en: "en-US",
+  de: "de-DE",
+  ko: "ko-KR",
+  zh: "zh-CN",
+  ja: "ja-JP",
+};
+
+export function isLocale(value: string | undefined): value is Locale {
+  return value !== undefined && (LOCALES as readonly string[]).includes(value);
+}
+
+export function localeHomePath(locale: Locale): string {
+  return locale === DEFAULT_LOCALE ? "/" : `/${locale}/`;
+}
+
+export function localeHashPath(locale: Locale, hash: string): string {
+  const base = localeHomePath(locale);
+  const id = hash.replace(/^#/, "");
+  return base === "/" ? `/#${id}` : `${base}#${id}`;
+}

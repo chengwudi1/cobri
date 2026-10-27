@@ -1,0 +1,38 @@
+{
+  "cli": {
+    "version": ">= 21.8.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "environment": "preview",
+      "channel": "preview",
+      "ios": {
+        "image": "macos-tahoe-26.6-xcode-27.1"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "environment": "production",
+      "channel": "production",
+      "ios": {
+        "image": "macos-tahoe-26.6-xcode-27.1"
+      }
+    },
+    "android-apk": {
+      "extends": "production",
+      "android": {
+        "buildType": "apk"
+      },
+      "environment": "production"
+    },
+    "diagnostic": {
+      "extends": "production",
+      "channel": "diagnostic"
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

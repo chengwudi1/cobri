@@ -1,0 +1,432 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Superseded PR checks cancel together; main revisions validate independently.
+# Only the production switch and mobile publication retain release locks below.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - name: Check translation catalogs are current
+        run: |
+          pnpm --filter @rakazo/web intl:extract
+          git diff --exit-code -- apps/web/src/locales
+
+  check:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+        env:
+          DATABASE_URL: postgres://rakazo:rakazo@127.0.0.1:5433/rakazo
+      - run: pnpm check
+
+  build:
+    name: Production builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+        env:
+          DATABASE_URL: postgres://rakazo:rakazo@127.0.0.1:5433/rakazo
+          BETTER_AUTH_SECRET: ci-build-auth-secret-at-least-32-characters
+          ENCRYPTION_KEY: ci-build-encryption-key-at-least-32-characters
+      - name: Electron smoke
+        run: xvfb-run --auto-servernum pnpm --filter @rakazo/desktop exec playwright test --config e2e/playwright.config.ts
+      - name: Upload desktop setup screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: desktop-e2e-screenshots
+          path: apps/desktop/e2e/screenshots
+          if-no-files-found: ignore
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+        env:
+          DATABASE_URL: postgres://rakazo:rakazo@127.0.0.1:5433/rakazo
+      - name: Install age for the encrypted backup round trip
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends age
+      - run: pnpm test
+      - name: Host operations safety tests
+        run: python3 infra/compose/host-safeguards.test.py
+      - name: Codex subscription auth safety tests
+        run: python3 .github/scripts/codex-subscription-auth.test.py
+      - name: Dependency update patch safety tests
+        run: python3 .github/scripts/dependency-update-patch.test.py
+
+  native-computer:
+    name: Native computer (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+        env:
+          DATABASE_URL: postgres://rakazo:rakazo@127.0.0.1:5433/rakazo
+      - run: pnpm --filter @rakazo/desktop build
+      - run: pnpm exec vitest run packages/adapters/src/host-computer.test.ts packages/adapters/src/desktop-sandbox-command.test.ts packages/adapters/src/desktop-sandbox-paths.test.ts packages/adapters/src/desktop-workspace-cleanup.test.ts packages/adapters/src/computer-support.test.ts apps/desktop/src/host-computer.test.ts
+      - name: Native computer in headless Electron
+        run: pnpm --filter @rakazo/desktop exec electron ../../node_modules/vitest/vitest.mjs run --root ../.. packages/adapters/src/host-computer.test.ts apps/desktop/src/host-computer.test.ts
+        env:
+          ELECTRON_RUN_AS_NODE: "1"
+
+  test-integration:
+    name: Postgres journeys
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:integration
+
+  test-postgres-upgrade:
+    name: Postgres upgrade
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - run: bash infra/compose/upgrade-postgres.docker-test.sh
+
+  test-e2e:
+    name: Web E2E
+    uses: ./.github/workflows/playwright.yml
+    with:
+      upload_artifacts: true
+
+  # Publishes sha-<commit> and edge alongside the checks, so the production deploy pulls the
+  # image this run built instead of building on the production host.
+  publish-server-image:
+    name: Publish server images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/publish-server-image.yml
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+  publish-mobile-update:
+    name: Publish compatible mobile update
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [lint, check, build, test, test-integration, test-e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: mobile-production-update
+      cancel-in-progress: false
+      queue: max
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check whether the change is safe for OTA
+        id: ota
+        shell: bash
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Compare against the commit installed builds already run, not just this push, so a
+          # change from a cancelled or skipped run is still published (or still blocks).
+          runtime="$(jq -r .expo.version apps/mobile/app.json)"
+          project="$(jq -r .expo.extra.eas.projectId apps/mobile/app.json)"
+          published="$(
+            curl -fsS https://api.expo.dev/graphql \
+              -H "authorization: Bearer $EXPO_TOKEN" \
+              -H "content-type: application/json" \
+              --data "$(jq -n --arg id "$project" '{
+                query: "query($id: String!) { app { byId(appId: $id) { updateBranchByName(name: \"production\") { updates(offset: 0, limit: 50) { gitCommitHash runtimeVersion isRollBackToEmbedded } } } } }",
+                variables: { id: $id }
+              }')" |
+              jq -r --arg runtime "$runtime" \
+                '[.data.app.byId.updateBranchByName.updates[]? | select(.runtimeVersion == $runtime and (.isRollBackToEmbedded | not) and .gitCommitHash != null)][0].gitCommitHash // ""'
+          )" || published=""
+          if [[ -n "$published" ]] && git merge-base --is-ancestor "$published" "$GITHUB_SHA" 2>/dev/null; then
+            base="$published"
+          else
+            echo "::warning::No published update for runtime $runtime on main's history; comparing with the previous push only."
+            base="$BEFORE_SHA"
+          fi
+          if [[ -z "$base" || "$base" =~ ^0+$ ]] || ! git cat-file -e "${base}^{commit}"; then
+            {
+              echo "### Mobile OTA skipped"
+              echo
+              echo "Found neither the last published update for runtime \`$runtime\` nor \`github.event.before\`, so this job will not publish a partial-range update."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Every package the mobile app resolves, transitive ones included, from the lockfile.
+          mobile_dependencies() {
+            git show "$1:pnpm-lock.yaml" | node .github/scripts/mobile-dependency-tree.mjs
+          }
+
+          mapfile -t files < <(
+            git diff --name-only "$base" "$GITHUB_SHA" -- \
+              apps/mobile \
+              packages/chat-ui \
+              packages/contracts \
+              packages/core
+          )
+          if [[ "$(mobile_dependencies "$base")" != "$(mobile_dependencies "$GITHUB_SHA")" ]]; then
+            files+=("pnpm-lock.yaml (mobile dependency tree)")
+          fi
+
+          publish=false
+          blocked=()
+          for file in "${files[@]}"; do
+            # Tests, types, docs and device test flows never ship in the app.
+            case "$file" in
+              *.test.ts|*.test.tsx|*.test.js|*.d.ts|*.md|apps/mobile/.maestro/*|apps/mobile/e2e/*)
+                continue
+                ;;
+            esac
+
+            eligible=false
+            case "$file" in
+              apps/mobile/app/*|apps/mobile/components/*|apps/mobile/lib/*)
+                case "$file" in
+                  *.ts|*.tsx) eligible=true ;;
+                esac
+                ;;
+              packages/chat-ui/src/*)
+                case "$file" in
+                  *.ts|*.tsx|*.css) eligible=true ;;
+                esac
+                ;;
+              packages/contracts/src/*|packages/core/src/*)
+                case "$file" in
+                  *.ts|*.tsx) eligible=true ;;
+                esac
+                ;;
+            esac
+
+            if [[ "$eligible" == true ]]; then
+              publish=true
+            else
+              blocked+=("$file")
+            fi
+          done
+
+          if (( ${#blocked[@]} > 0 )); then
+            publish=false
+            {
+              echo "### Mobile OTA skipped"
+              echo
+              echo "Since \`${base:0:9}\`, the last update installed builds run, these native-sensitive files changed:"
+              echo
+              printf -- '- `%s`\n' "${blocked[@]}"
+              echo
+              echo "Ship new iOS and Android builds, or publish by hand once the JavaScript is confirmed safe on the current builds."
+            } >> "$GITHUB_STEP_SUMMARY"
+          elif [[ "$publish" == true ]]; then
+            {
+              echo "### Mobile OTA eligible"
+              echo
+              echo "Since \`${base:0:9}\`, only JavaScript, TypeScript, or bundled CSS used by the mobile client changed."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "### No mobile OTA needed"
+              echo
+              echo "Nothing in the shipped mobile bundle changed since \`${base:0:9}\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+
+      - name: Require Expo automation token
+        if: steps.ota.outputs.publish == 'true'
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [[ -z "$EXPO_TOKEN" ]]; then
+            echo "Add an EXPO_TOKEN repository secret with access to the inbox-zero/rakazo Expo project." >&2
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        if: steps.ota.outputs.publish == 'true'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        if: steps.ota.outputs.publish == 'true'
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Set up Expo
+        if: steps.ota.outputs.publish == 'true'
+        uses: expo/expo-github-action@eab7a230208c952974db8c3245cfd78402c7b385 # v9
+        with:
+          eas-version: latest
+          packager: pnpm
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Install dependencies
+        if: steps.ota.outputs.publish == 'true'
+        run: pnpm install --frozen-lockfile
+      - name: Verify mobile project
+        if: steps.ota.outputs.publish == 'true'
+        run: pnpm --filter @rakazo/mobile check
+      - name: Publish production update
+        if: steps.ota.outputs.publish == 'true'
+        working-directory: apps/mobile
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_URL: ${{ secrets.SENTRY_URL }}
+        run: |
+          set -euo pipefail
+          check_current_main() {
+            local head
+            head="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+            if [[ -z "$head" ]]; then
+              echo "Could not resolve the current main head before publishing." >&2
+              exit 1
+            fi
+            if [[ "$GITHUB_SHA" != "$head" ]]; then
+              {
+                echo "### Mobile OTA skipped"
+                echo
+                echo "This run is for \`$GITHUB_SHA\`, but \`main\` is now \`$head\`. Skipping so an older revision cannot overwrite a newer production update."
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+          }
+          check_current_main
+          if [[ -n "$SENTRY_AUTH_TOKEN" && ( -z "$SENTRY_ORG" || -z "$SENTRY_PROJECT" ) ]]; then
+            echo "Sentry uploads require SENTRY_ORG and SENTRY_PROJECT." >&2
+            exit 1
+          fi
+          eas env:exec production 'pnpm exec expo export --platform ios --platform android --clear --source-maps --dump-assetmap' --non-interactive
+          if [[ -n "$SENTRY_AUTH_TOKEN" ]]; then
+            # The SDK uploader only warns when there are no source maps; fail instead.
+            if [[ -z "$(find dist -type f -name '*.map' -print -quit)" ]]; then
+              echo "The mobile export has no source maps to upload." >&2
+              exit 1
+            fi
+            SENTRY_URL="${SENTRY_URL:-https://sentry.io/}" pnpm exec sentry-expo-upload-sourcemaps dist
+          fi
+          check_current_main
+          eas update --platform all --channel production --environment production --skip-bundler --input-dir dist --upload-source-maps --message "$GITHUB_SHA" --non-interactive
+
+  deploy-production:
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      vars.PRODUCTION_DEPLOY_ENABLED == 'true'
+    # The host pulls the image published for this commit; it builds only if that pull fails.
+    needs: [lint, check, build, test, test-integration, test-postgres-upgrade, test-e2e, publish-server-image]
+    runs-on: ubuntu-latest
+    # Matches infra/compose/deploy-main.sh's own limits, including a fallback build and rollback.
+    timeout-minutes: 45
+    concurrency:
+      group: production
+      cancel-in-progress: false
+      queue: max
+    environment:
+      name: production
+      url: https://app.rakazo.com
+    steps:
+      - name: Configure production SSH identity
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_SSH_KNOWN_HOSTS }}
+        run: |
+          test -n "$SSH_PRIVATE_KEY"
+          test -n "$SSH_KNOWN_HOSTS"
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/rakazo-production"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/rakazo-production" "$HOME/.ssh/known_hosts"
+          ssh-keygen -y -f "$HOME/.ssh/rakazo-production" >/dev/null
+
+      - name: Deploy successful main revision
+        env:
+          SSH_HOST: ${{ secrets.PRODUCTION_SSH_HOST }}
+          SSH_USER: ${{ secrets.PRODUCTION_SSH_USER }}
+        run: |
+          test -n "$SSH_HOST"
+          test -n "$SSH_USER"
+          ssh -F /dev/null \
+            -i "$HOME/.ssh/rakazo-production" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            "$SSH_USER@$SSH_HOST" "deploy-main $GITHUB_SHA"
