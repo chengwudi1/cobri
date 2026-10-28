@@ -69,13 +69,14 @@ function start(file, label, key) {
   return child;
 }
 
-console.log("Starting demo fixtures on 0.0.0.0:4310-4313 (health via 127.0.0.1)");
+console.log("Starting demo fixtures on 0.0.0.0:4310-4314 (health via 127.0.0.1)");
 console.log("Press Ctrl+C to stop all, or run: node demo-fixtures/stop.js");
 
 start("competitor-site.js", "competitor:4310", "competitor");
 start("customer-portal.js", "portal:4311", "portal");
 start("fake-gmail.js", "gmail:4312", "gmail");
 start("fake-calendar.js", "calendar:4313", "calendar");
+start("fake-crm.js", "crm:4314", "crm");
 writePidFile();
 
 process.on("SIGINT", () => stopAll(0));
