@@ -13,6 +13,21 @@ const INITIAL_CHANGELOG = [
   { date: "2026-10-07", title: "企业版支持 SSO 单点登录" },
 ];
 
+const INITIAL_NEWS = [
+  {
+    date: "2026-10-20",
+    title: "云图智能团队版新增审计日志，价格从 199 元调整为 229 元",
+  },
+  {
+    date: "2026-10-12",
+    title: "远山科技发布「远山智脑 2.0」，新增合同审阅与报价单生成",
+  },
+  {
+    date: "2026-09-18",
+    title: "远山科技完成 B 轮融资 2.4 亿元，海岚资本领投，资金用于行业大模型",
+  },
+];
+
 let state;
 
 function resetState() {
@@ -21,6 +36,7 @@ function resetState() {
     teamPrice: 199,
     enterprisePrice: 399,
     changelog: INITIAL_CHANGELOG.map((entry) => ({ ...entry })),
+    news: INITIAL_NEWS.map((entry) => ({ ...entry })),
     mutated: false,
   };
 }
@@ -49,7 +65,7 @@ function page(title, body) {
   <title>${escapeHtml(title)} · 云图智能</title>
 </head>
 <body>
-  <header><strong>云图智能</strong> <nav><a href="/pricing">定价</a> · <a href="/changelog">更新日志</a></nav></header>
+  <header><strong>云图智能</strong> <nav><a href="/pricing">定价</a> · <a href="/changelog">更新日志</a> · <a href="/news">新闻</a></nav></header>
   <main>${body}</main>
 </body>
 </html>`;
@@ -85,6 +101,23 @@ ${items}
   );
 }
 
+function newsPage() {
+  const items = state.news
+    .map(
+      (entry) =>
+        `  <li><time datetime="${escapeHtml(entry.date)}">${escapeHtml(entry.date)}</time> ${escapeHtml(entry.title)}</li>`,
+    )
+    .join("\n");
+  return page(
+    "新闻",
+    `<h1>行业新闻</h1>
+<p>共 ${state.news.length} 条新闻</p>
+<ol>
+${items}
+</ol>`,
+  );
+}
+
 function pricingPayload() {
   return {
     company: state.company,
@@ -97,6 +130,14 @@ function pricingPayload() {
       { id: "enterprise", name: "企业版", price: state.enterprisePrice, unit: "席/月" },
     ],
     changelog: state.changelog.map((entry) => ({ ...entry })),
+  };
+}
+
+function newsPayload() {
+  return {
+    company: state.company,
+    count: state.news.length,
+    news: state.news.map((entry) => ({ ...entry })),
   };
 }
 
@@ -195,6 +236,14 @@ const server = http.createServer((req, res) => {
     sendHtml(res, 200, changelogPage());
     return;
   }
+  if (req.method === "GET" && path === "/news") {
+    sendHtml(res, 200, newsPage());
+    return;
+  }
+  if (req.method === "GET" && path === "/news.json") {
+    sendJson(res, 200, newsPayload());
+    return;
+  }
   if (path === "/__fixture/mutate") {
     handleMutate(req, res);
     return;
@@ -209,6 +258,7 @@ const server = http.createServer((req, res) => {
       teamPrice: state.teamPrice,
       enterprisePrice: state.enterprisePrice,
       changelogCount: state.changelog.length,
+      newsCount: state.news.length,
       mutated: state.mutated,
     });
     return;
@@ -219,6 +269,7 @@ const server = http.createServer((req, res) => {
       ok: true,
       teamPrice: state.teamPrice,
       changelogCount: state.changelog.length,
+      newsCount: state.news.length,
     });
     return;
   }
