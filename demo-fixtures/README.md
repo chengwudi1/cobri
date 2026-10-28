@@ -1,6 +1,6 @@
 # Cobri 本地演示夹具
 
-零第三方依赖，使用 Node 24 内置模块；四个服务默认监听 `0.0.0.0`，本地健康检查用 `127.0.0.1`，不占用 Rakazo 的 3000/3001 端口。
+零第三方依赖，使用 Node 24 内置模块；五个服务默认监听 `0.0.0.0`，本地健康检查用 `127.0.0.1`，不占用 Rakazo 的 3000/3001 端口。
 
 | 服务 | 端口 | 文件 | 用途 |
 | --- | --- | --- | --- |
@@ -8,10 +8,11 @@
 | 客户门户 | 4311 | `customer-portal.js` | 登录、cookie 会话、3 条未读消息 |
 | 假 Gmail | 4312 | `fake-gmail.js` | 5 封种子邮件、发送记录 |
 | 假日历 | 4313 | `fake-calendar.js` | 已有事件、创建事件 |
+| 假 CRM | 4314 | `fake-crm.js` | 远山科技联系人、备注 |
 
 ## 监听地址与容器访问
 
-四个服务默认监听 `0.0.0.0`，所以宿主机、局域网和 Docker 容器都能访问。启动日志里的健康检查地址仍用 `127.0.0.1`。
+五个服务默认监听 `0.0.0.0`，所以宿主机、局域网和 Docker 容器都能访问。启动日志里的健康检查地址仍用 `127.0.0.1`。
 
 Bot 跑在容器里时，容器内的 `localhost` / `127.0.0.1` 指容器自己，不是宿主机。Windows 和 macOS 的 Docker Desktop 用：
 
@@ -22,7 +23,7 @@ http://host.docker.internal:4313
 
 Linux Docker 需要在容器上显式加主机映射，例如 `--add-host=host.docker.internal:host-gateway`，或者直接使用宿主机局域网 IP。
 
-2026-10-28 实测：四个假服务以 `0.0.0.0` 启动后，在运行中的 `rakazo/computer:local` Bot 容器里执行：
+2026-10-28 实测：五个假服务以 `0.0.0.0` 启动后，在运行中的 `rakazo/computer:local` Bot 容器里执行：
 
 - `curl http://host.docker.internal:4310/pricing` → HTTP 200，响应片段 `<title>定价 · 云图智能</title>`。
 - `curl http://host.docker.internal:4312/messages` → HTTP 200，响应片段 `"id": "m1"`、`"subject": "远山科技客户会邀"`。
@@ -45,13 +46,14 @@ Rakazo 侧还需要：
 node demo-fixtures/start.js
 ```
 
-四个服务会同时启动，日志分别带 `[competitor:4310]`、`[portal:4311]`、`[gmail:4312]`、`[calendar:4313]` 前缀。也可以分开启动：
+五个服务会同时启动，日志分别带 `[competitor:4310]`、`[portal:4311]`、`[gmail:4312]`、`[calendar:4313]`、`[crm:4314]` 前缀。也可以分开启动：
 
 ```bash
 node demo-fixtures/competitor-site.js
 node demo-fixtures/customer-portal.js
 node demo-fixtures/fake-gmail.js
 node demo-fixtures/fake-calendar.js
+node demo-fixtures/fake-crm.js
 ```
 
 ## 停止
@@ -67,7 +69,7 @@ node demo-fixtures/stop.js
 如果只单独启动了某一个服务，`stop.js` 不知道它的 PID；在该终端按 `Ctrl+C`，或按端口结束。PowerShell：
 
 ```powershell
-Get-NetTCPConnection -LocalPort 4310,4311,4312,4313 -ErrorAction SilentlyContinue |
+Get-NetTCPConnection -LocalPort 4310,4311,4312,4313,4314 -ErrorAction SilentlyContinue |
   Select-Object -ExpandProperty OwningProcess -Unique |
   ForEach-Object { Stop-Process -Id $_ -Force }
 ```
@@ -75,7 +77,7 @@ Get-NetTCPConnection -LocalPort 4310,4311,4312,4313 -ErrorAction SilentlyContinu
 Git Bash：
 
 ```bash
-netstat -ano | grep -E ':(4310|4311|4312|4313)\b'
+netstat -ano | grep -E ':(4310|4311|4312|4313|4314)\b'
 taskkill //PID <上一步看到的 PID> //F
 ```
 
