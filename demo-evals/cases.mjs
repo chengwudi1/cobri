@@ -31,13 +31,14 @@ const group = (name, mentions = []) => ({ kind: "group", name, mentions });
 const bot = (name) => ({ kind: "bot", name });
 
 const GROUP_APIS = [
-  "POST /rpc/groups/list",
+  "POST /rpc/groups/create",
   "POST /rpc/threads/send",
   "POST /rpc/runs/list",
   "POST /rpc/threads/get",
 ];
 const BOT_APIS = [
   "POST /rpc/bots/list",
+  "POST /rpc/threads/clear",
   "POST /rpc/threads/send",
   "POST /rpc/runs/list",
   "POST /rpc/threads/get",
@@ -54,7 +55,7 @@ export const CASES = [
     input:
       "@日程 查一下下周四下午三点到五点我有没有冲突；@研究 同时给我远山科技最近一个月的融资和产品动态。",
     expected:
-      "同一群 transcript 出现两条带 Bot 名称的回复；日程指出 15:00-16:00 与产品评审冲突、16:00 后可用；研究给出种子事实；未被 @ 的总管不回复。",
+      "同一群 transcript 出现两条带 Bot 名称的回复；日程指出 15:00-16:00 与产品评审冲突、16:00 后可用；研究给出种子事实：远山科技 B 轮 2.4 亿元（2026-09-18，海岚资本领投）与远山智脑 2.0（2026-10-12，合同审阅/报价单生成）；未被 @ 的总管不回复。",
     assertions: [
       {
         kind: "rpc",
@@ -71,7 +72,7 @@ export const CASES = [
         kind: "rpc",
         ref: "threads/get",
         description:
-          "两条 bot 消息的 botId 正确；日程文本含产品评审和 15:00-16:00；研究文本含竞品种子事实。",
+          "两条 bot 消息的 botId 正确；日程文本含产品评审和 15:00-16:00；研究文本含 B 轮 2.4 亿元（2026-09-18，海岚资本领投）与远山智脑 2.0（2026-10-12，合同审阅/报价单）。",
       },
       {
         kind: "fixture",
@@ -81,7 +82,8 @@ export const CASES = [
       {
         kind: "fixture",
         ref: "competitor",
-        description: "研究 run 有竞品页读取记录（browser_* 或 web_fetch）。",
+        description:
+          "研究 run 有竞品页读取记录（web_fetch、browser_*，或 web_fetch 禁用后的 shell 读取）。",
       },
       model("以上回复和工具选择依赖真实模型；无模型时本条 unqualified。"),
     ],
