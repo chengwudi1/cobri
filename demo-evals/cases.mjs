@@ -25,6 +25,12 @@ export const RESET_SERVICES = [
     baseUrl: "http://127.0.0.1:4313",
     resetPath: "/__reset",
   },
+  {
+    key: "crm",
+    name: "假 CRM",
+    baseUrl: "http://127.0.0.1:4314",
+    resetPath: "/__reset",
+  },
 ];
 
 const group = (name, mentions = []) => ({ kind: "group", name, mentions });
@@ -201,42 +207,57 @@ export const CASES = [
   {
     id: "05",
     category: "独立电脑",
-    title: "共享目录交接，草稿留在自己 home",
+    title: "消息+附件交接，文件留自有目录",
     target: bot("收件箱"),
     input:
-      "把远山科技这封会邀里的时间、参会人、待确认事项整理到团队共享目录 meeting/yuanshan-2026-11-05.md，原始邮件摘录存到你自己的 notes/ 里。",
+      "把远山科技这封会邀整理成一页纸议程，作为附件通过消息发给总管，让他复述要点。",
     expected:
-      "总管和日程都能读到 shared/meeting/yuanshan-2026-11-05.md；原始邮件摘录只在收件箱 Bot 的 notes/；shared 文档不含整封邮件原文。",
+      "收件箱把议程文件存在自己 home 的 reports/ 一类目录；通过 bot 消息把附件交给总管；总管收到后能读到附件并复述 11-05 16:00/李总等要点；不依赖 shared，且没有外部写。",
     assertions: [
       {
         kind: "rpc",
-        ref: "computer/readFile",
+        ref: "threads/get",
         description:
-          "收件箱读 shared 路径成功，内容含 11-05 16:00、李总/王总、待确认事项；总管读同一路径成功。",
+          "收件箱有 bot_message_sent（intent=result），且同一消息带 file/attachment 的 id/name；总管有 bot_message_received。",
+      },
+      {
+        kind: "rpc",
+        ref: "threads/get",
+        description:
+          "总管能读到附件内容，并在回复中复述 11-05 16:00、李总等议程要点。",
       },
       {
         kind: "rpc",
         ref: "computer/files",
         description:
-          "shared 列表包含会议文档；原始邮件摘录位于 bots/<inboxId>/notes/，不在 shared。",
+          "议程文件实际存在于收件箱 Bot 自有 home 的 reports/ 一类目录；不需要 shared。",
       },
       {
-        kind: "rpc",
-        ref: "threads/get",
-        description: "收件箱 run completed，并有两条 write_file 的 computer.command。",
+        kind: "fixture",
+        ref: "gmail",
+        description: "Gmail sent=0；假日历事件数不变；没有外部写。",
       },
-      model("目录整理依赖模型规划写文件；无模型时本条 unqualified。"),
+      model("附件交接依赖平台 bot 消息携带附件；无模型时本条 unqualified。"),
     ],
-    tools: ["write_file", "read_file / list_files", "Team Computer shared/"],
+    tools: ["write_file", "attach_file", "message_bot", "bot_message_received"],
     apis: [...BOT_APIS, "POST /rpc/computer/readFile", "POST /rpc/computer/files"],
     requiresModel: true,
+    blocked: true,
+    blockers: [
+      "平台限制：message_bot 入参只有 message/intent；bot_message_sent/bot_message_received 没有附件字段（附件 id/name 无处承载）。",
+      "attach_file 只把文件挂到发送方当前线程；接收方没有读取对方附件的路径，dedicated homes 也不互通。",
+      "实测：收件箱 run cmvrx4x9s… 生成并 attach 了「远山科技续约会议_一页纸议程_2026-11-05.md」，但总管只收到 bot_message_received 纯文本，回复「附件我读不到；shared/ 在本机不存在」；Gmail sent=0、日历仍 1 条。",
+      "要满足消息携带附件交接需要改业务代码（peer 消息附件/artifact 传递与接收方读取），本轮不做。",
+    ],
   },
   {
     id: "06",
     category: "独立电脑",
     title: "独立登录态：同一门户，两个 Bot 互不可见",
     target: group("工作助理团队", ["收件箱", "日程"]),
-    input: "@收件箱 登录客户门户看一下未读消息；@日程 也打开同一个门户确认一下登录状态。",
+    // URL 明确给到 dedicated Bot；登录态隔离断言不变。
+    input:
+      "@收件箱 登录客户门户 http://host.docker.internal:4311 看一下未读消息；@日程 也打开同一个门户 http://host.docker.internal:4311 确认一下登录状态。",
     expected:
       "收件箱页面显示已登录账号与 3 条未读；日程看到登录页，看不到收件箱账号；收件箱重开后仍登录。",
     assertions: [
@@ -334,7 +355,8 @@ export const CASES = [
     category: "审批门",
     title: "审批暂停恢复 + 恰好一次",
     target: bot("总管"),
-    input: "把远山合同的金额备注写进 CRM，然后把这版报价发邮件给李总；两件事都做成。",
+    // 明确写成 CRM 里的 48 万版本，只消除“这版报价”指代不明；审批/幂等断言不变。
+    input: "把远山合同的金额备注写进 CRM，然后按刚写进 CRM 的 48 万报价发邮件给李总",
     expected:
       "先出现 CRM 备注审批，刷新后仍在；批准后只写一条备注；随后邮件审批，批准后只发一封；再次刷新计数不变。",
     assertions: [
@@ -366,7 +388,6 @@ export const CASES = [
     tools: ["CRM_CREATE_NOTE", "GMAIL_SEND_EMAIL", "approval card", "threads/answer"],
     apis: [...BOT_APIS, "POST /rpc/threads/answer"],
     requiresModel: true,
-    blockers: ["CRM 假服务未安装：当前只装了 Gmail 和 Calendar，CRM_CREATE_NOTE 不可用。"],
   },
   {
     id: "10",

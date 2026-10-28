@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 "use strict";
 
+import { readdir, rm } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { CASES, RESET_SERVICES, SMOKE } from "./cases.mjs";
+
+const HOMES_DIR = fileURLToPath(new URL("../data/homes", import.meta.url));
 
 const BASE_URL = process.env.COBRI_EVAL_BASE_URL || "http://127.0.0.1:5180";
 const EMAIL = process.env.COBRI_EVAL_EMAIL || "pm@cobri-demo.com";
@@ -509,22 +514,31 @@ async function evaluateCase01(cookie, target, sent, waited, beforeRunIds) {
   );
   const expectedBotId = (name) =>
     target.members.find((member) => member.name === name)?.botId;
-  const scheduleReply = replies.find((message) => message.botId === expectedBotId("日程"));
-  const researchReply = replies.find((message) => message.botId === expectedBotId("研究"));
+  const scheduleReplyText = replies
+    .filter((message) => message.botId === expectedBotId("日程"))
+    .map(messageText)
+    .join("\n");
+  const researchReplyText = replies
+    .filter((message) => message.botId === expectedBotId("研究"))
+    .map(messageText)
+    .join("\n");
+  const replyBotIds = new Set(replies.map((message) => message.botId));
   add(
     "two bot replies with correct botIds",
-    replies.length === 2 && Boolean(scheduleReply) && Boolean(researchReply),
-    `replies=${replies.map((message) => message.botId).join(", ") || "none"}`,
+    replyBotIds.size === 2 &&
+      replyBotIds.has(expectedBotId("日程")) &&
+      replyBotIds.has(expectedBotId("研究")),
+    `messages=${replies.length}, bots=${[...replyBotIds].join(", ") || "none"}`,
   );
 
-  const scheduleText = normalizeForMatch(messageText(scheduleReply));
+  const scheduleText = normalizeForMatch(scheduleReplyText);
   add(
     "schedule reply states conflict and slot",
     scheduleText.includes("产品评审") && scheduleText.includes("15:00-16:00"),
     scheduleText ? scheduleText.slice(0, 160) : "missing schedule reply",
   );
 
-  const researchText = normalizeForMatch(messageText(researchReply));
+  const researchText = normalizeForMatch(researchReplyText);
   const researchFacts = [
     ["B 轮", /b\s*轮/],
     ["2.4 亿元", /2\.4\s*亿/],
@@ -546,14 +560,16 @@ async function evaluateCase01(cookie, target, sent, waited, beforeRunIds) {
       : "all fixture facts present",
   );
 
-  const scheduleSteps = messageStepLabels(scheduleReply);
+  const scheduleRun = waited.runs.find((run) => run.botName === "日程");
+  const researchRun = waited.runs.find((run) => run.botName === "研究");
+  const scheduleSteps = combinedRunSteps(snapshot, scheduleRun?.runId);
   add(
     "schedule run read the calendar",
     scheduleSteps.some((label) => /calendar/i.test(label)),
     `steps=${scheduleSteps.join(" | ") || "none"}`,
   );
 
-  const researchSteps = messageStepLabels(researchReply);
+  const researchSteps = combinedRunSteps(snapshot, researchRun?.runId);
   add(
     "research run read the competitor fixture",
     researchSteps.some((label) => /web\s*fetch|browser|shell/i.test(label)),
@@ -636,6 +652,13 @@ async function waitForNewRun(cookie, beforeRunIds, predicate, timeoutMs = 120_00
   return null;
 }
 
+async function clearBotScratchpad(cookie, botId) {
+  const items = await rpc(cookie, "scratchpad/list", { botId, includeDone: true });
+  for (const item of items) {
+    await rpc(cookie, "scratchpad/remove", { itemId: item.id });
+  }
+}
+
 async function runCase07(cookie, item, reset, modelState) {
   const checks = [];
   const add = (name, pass, detail) => {
@@ -658,6 +681,8 @@ async function runCase07(cookie, item, reset, modelState) {
   const clearThreads = async () => {
     await rpc(cookie, "threads/clear", { botId: chief.id });
     await rpc(cookie, "threads/clear", { botId: inbox.id });
+    await clearBotScratchpad(cookie, chief.id);
+    await clearBotScratchpad(cookie, inbox.id);
   };
   const beforeGmail = await gmailSentState();
   add("gmail starts with sent=0", beforeGmail.sent.length === 0, `sent=${beforeGmail.sent.length}`);
@@ -769,9 +794,14 @@ async function runCase07(cookie, item, reset, modelState) {
         subject.includes("会议") && subject.includes("续约"),
         `subject=${record.subject ?? "?"}`,
       );
+      const timeMatches =
+        body.includes("16:00") ||
+        /下午\s*4\s*[:：]?\s*0?0/.test(body) ||
+        /下午\s*4\s*点/.test(body);
       add(
         "[allow] body carries 2026-11-05 16:00",
-        body.includes("16:00") && /2026-11-05|2026年11月5日|11月5日|11-05/.test(body),
+        timeMatches &&
+          /2026-11-05|2026年11月5日|2026\s*年\s*11\s*月\s*5\s*日|11月5日|11-05/.test(body),
         `body=${String(record.body ?? "").replace(/\s+/g, " ").slice(0, 160)}`,
       );
     }
@@ -1010,7 +1040,8 @@ async function runCase03(cookie, item, reset, modelState) {
     inboxSnapshot,
     (block) => block.kind === "bot_message_received" && block.fromBotId === chief.id,
   );
-  const inboxText = normalizeForMatch(combinedRunText(inboxSnapshot, inboxRun.runId));
+  const inboxRawText = combinedRunText(inboxSnapshot, inboxRun.runId);
+  const inboxText = normalizeForMatch(inboxRawText);
   const inboxSteps = combinedRunSteps(inboxSnapshot, inboxRun.runId);
   add("收件箱 woken by bot_message", true, `run=${inboxRun.runId}`);
   add("收件箱 received private request", Boolean(received), received ? `message=${received.message.id}` : "no bot_message_received");
@@ -1026,9 +1057,9 @@ async function runCase03(cookie, item, reset, modelState) {
     inboxText.slice(0, 220) || "no inbox text",
   );
   add(
-    "收件箱 briefing excludes m4/m5",
-    !/行业周报|周报/.test(inboxText) && !/午餐/.test(inboxText),
-    inboxText.slice(0, 220) || "no inbox text",
+    "收件箱 briefing excludes m4/m5 as todo",
+    !listsM4M5AsTodo(inboxRawText),
+    listsM4M5AsTodo(inboxRawText) ? inboxRawText.slice(0, 220) : "not in numbered/bulleted items",
   );
 
   const returnRun = await waitForNewRun(
@@ -1122,7 +1153,8 @@ async function runCase10(cookie, item, reset, modelState) {
   const history = await rpc(cookie, "routines/history", { routineId: routine.id });
   const historyRun = history.runs?.find((run) => run.id === test.runId);
   const snapshot = await botSnapshot(cookie, inbox.id);
-  const text = normalizeForMatch(combinedRunText(snapshot, test.runId));
+  const rawText = combinedRunText(snapshot, test.runId);
+  const text = normalizeForMatch(rawText);
   const steps = combinedRunSteps(snapshot, test.runId);
   const textMessages = botMessagesForRun(snapshot, test.runId).filter(
     (message) => messageText(message).trim(),
@@ -1146,10 +1178,11 @@ async function runCase10(cookie, item, reset, modelState) {
     missing.length === 0,
     missing.length > 0 ? `missing=${missing.join(", ")}; text=${text.slice(0, 240)}` : "all present",
   );
+  const m4m5Listed = listsM4M5AsTodo(rawText);
   add(
-    "briefing excludes m4/m5",
-    !/行业周报|周报/.test(text) && !/午餐/.test(text),
-    text.slice(0, 240) || "no briefing text",
+    "briefing does not list m4/m5 as todo",
+    !m4m5Listed,
+    m4m5Listed ? `listed m4/m5 as item; text=${rawText.slice(0, 240)}` : "not in numbered/bulleted/table items",
   );
   add(
     "briefing read Gmail",
@@ -1210,6 +1243,21 @@ async function waitForWatchState(cookie, botId, routineId, predicate, timeoutMs 
   return last;
 }
 
+async function clearMonitoringArtifacts(botId) {
+  const home = path.join(HOMES_DIR, botId);
+  await rm(path.join(home, "monitor"), { recursive: true, force: true });
+  await rm(path.join(home, "yuntu"), { recursive: true, force: true });
+  const reports = path.join(home, "reports");
+  try {
+    const entries = await readdir(reports, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isFile()) await rm(path.join(reports, entry.name), { force: true });
+    }
+  } catch {
+    // No reports directory is fine.
+  }
+}
+
 async function runCase11(cookie, item, reset, modelState) {
   const checks = [];
   const add = (name, pass, detail) => {
@@ -1239,7 +1287,8 @@ async function runCase11(cookie, item, reset, modelState) {
     return stale.length;
   };
   const clearedBefore = await clearMonitoringScratchpad();
-  console.log(`  setup: cleared ${clearedBefore} stale monitoring scratchpad item(s)`);
+  await clearMonitoringArtifacts(research.id);
+  console.log(`  setup: cleared ${clearedBefore} stale monitoring scratchpad item(s) and monitor/report files`);
   const existing = await rpc(cookie, "routines/list", { botId: research.id });
   for (const routine of existing) {
     if (routine.name.startsWith("Eval ") || routine.prompt.includes("竞品") || routine.prompt.includes("云图")) {
@@ -1573,6 +1622,810 @@ async function runCase02(cookie, item, reset, modelState) {
   };
 }
 
+async function listComputerFiles(cookie, botId, path) {
+  try {
+    return await rpc(cookie, "computer/files", { botId, path });
+  } catch {
+    return null;
+  }
+}
+
+async function snapshotHomeFiles(cookie, botId) {
+  const files = new Map();
+  const visit = async (path, depth) => {
+    const entries = await listComputerFiles(cookie, botId, path);
+    if (!entries) return;
+    for (const entry of entries) {
+      const full = entry.path.startsWith("/") ? entry.path : `/${entry.path}`;
+      if (entry.kind === "file") files.set(full, entry.size);
+      else if (
+        entry.kind === "dir" &&
+        depth < 2 &&
+        !/\/\.(browser-profiles|cache|config|dbus|local|fontconfig)(\/|$)/.test(full)
+      ) {
+        await visit(full, depth + 1);
+      }
+    }
+  };
+  await visit("/", 0);
+  return files;
+}
+
+async function readComputerFile(cookie, botId, path) {
+  try {
+    const result = await rpc(cookie, "computer/readFile", { botId, path });
+    return result.content;
+  } catch {
+    return null;
+  }
+}
+
+async function runCase04(cookie, item, reset, modelState) {
+  const checks = [];
+  const add = (name, pass, detail) => {
+    checks.push({ name, pass, detail });
+    console.log(`  ${pass ? "PASS" : "FAIL"} ${name}: ${detail}`);
+  };
+
+  const bots = await rpc(cookie, "bots/list");
+  const research = bots.find((bot) => bot.name === "研究");
+  add("研究 exists", Boolean(research), `bot=${research?.id ?? "missing"}`);
+  if (!research) {
+    return { id: item.id, status: "FAIL", reason: "missing_bot", reset, model: modelState, assertions: checks };
+  }
+
+  const boot = await rpc(cookie, "computer/boot", { botId: research.id });
+  add("research computer running", boot.state === "running", `state=${boot.state}`);
+  const beforeFiles = await snapshotHomeFiles(cookie, research.id);
+  const beforeContents = new Map();
+  for (const [path] of beforeFiles) {
+    if (path.endsWith(".md")) beforeContents.set(path, await readComputerFile(cookie, research.id, path));
+  }
+
+  const target = await resolveTarget(cookie, item);
+  const sent = await sendCase(cookie, item, target);
+  console.log(`  target: bot ${target.threadId}`);
+  console.log(`  runIds: ${sent.runIds.join(", ")}`);
+  const waited = await waitForRuns(cookie, sent.runIds, 300_000);
+  const runId = sent.runIds[0];
+  const status = waited.runs?.[0]?.status;
+  const snapshot = await botSnapshot(cookie, research.id);
+  add("research run completed", status === "completed", `status=${status ?? "?"}, run=${runId}`);
+  const steps = combinedRunSteps(snapshot, runId);
+  add(
+    "research used the computer browser",
+    steps.some((label) => /browser|computer_observe|computer_act/i.test(label)),
+    `steps=${steps.join(" | ") || "none"}`,
+  );
+
+  const afterFiles = await snapshotHomeFiles(cookie, research.id);
+  const candidates = [];
+  for (const [path, size] of afterFiles) {
+    if (!path.endsWith(".md")) continue;
+    const beforeSize = beforeFiles.get(path);
+    const content = await readComputerFile(cookie, research.id, path);
+    if (content == null) continue;
+    const changed =
+      beforeSize === undefined || beforeSize !== size || beforeContents.get(path) !== content;
+    if (changed) candidates.push({ path, content });
+  }
+  const looksLikeBrief = (content) =>
+    /199/.test(content) &&
+    /399/.test(content) &&
+    /云图|竞品/.test(content) &&
+    /更新日志|changelog/i.test(content);
+  const brief = candidates.find((candidate) => looksLikeBrief(candidate.content)) ?? candidates[0] ?? null;
+  add(
+    "new or updated brief in own home",
+    Boolean(brief) && !brief.path.startsWith("/shared/"),
+    brief ? `path=${brief.path}` : `candidates=${candidates.map((candidate) => candidate.path).join(",") || "none"}`,
+  );
+  if (brief) {
+    const content = brief.content;
+    add("brief has team 199 / enterprise 399", content.includes("199") && content.includes("399"), `path=${brief.path}`);
+    const logHits = ["2026-10-21", "2026-10-14", "2026-10-07"].filter((date) => content.includes(date)).length;
+    add("brief has 3 changelog entries", logHits === 3, `dateHits=${logHits}/3`);
+    add(
+      "brief has source links",
+      /host\.docker\.internal:4310\/pricing/.test(content) &&
+        /host\.docker\.internal:4310\/changelog/.test(content),
+      "pricing+changelog links",
+    );
+  } else {
+    add("brief has team 199 / enterprise 399", false, "no brief file");
+    add("brief has 3 changelog entries", false, "no brief file");
+    add("brief has source links", false, "no brief file");
+  }
+
+  const shared = await listComputerFiles(cookie, research.id, "/shared");
+  let sharedBrief = false;
+  if (shared) {
+    for (const entry of shared.filter((candidate) => candidate.kind === "file" && candidate.path.endsWith(".md")).slice(0, 20)) {
+      const content = await readComputerFile(
+        cookie,
+        research.id,
+        entry.path.startsWith("/") ? entry.path : `/${entry.path}`,
+      );
+      if (content && /199/.test(content) && /399/.test(content) && /云图|竞品/.test(content)) {
+        sharedBrief = true;
+        break;
+      }
+    }
+  }
+  add(
+    "shared has no brief",
+    !sharedBrief,
+    shared ? `entries=${shared.length}, brief=${sharedBrief}` : "no shared directory (dedicated bot)",
+  );
+  const profiles = await listComputerFiles(cookie, research.id, "/.browser-profiles");
+  add(
+    "independent browser profile",
+    Array.isArray(profiles) && profiles.length > 0,
+    profiles?.map((entry) => entry.path).join(",") || "none",
+  );
+
+  if (!brief) {
+    console.log(
+      `  evidence: run=${runId} status=${status ?? "?"}; steps=${steps.join(" | ") || "none"}; text=${messageText((snapshot.messages ?? []).find((message) => message.runId === runId && message.role === "bot")).slice(0, 300) || "none"}; candidates=${candidates.map((candidate) => candidate.path).join(",") || "none"}`,
+    );
+  }
+
+  const passed = checks.every((check) => check.pass);
+  console.log(`  result: ${passed ? "PASS" : "FAIL"}`);
+  return {
+    id: item.id,
+    status: passed ? "PASS" : "FAIL",
+    reason: passed ? "assertions_passed" : "assertions_failed",
+    reset,
+    model: modelState,
+    assertions: checks,
+  };
+}
+
+async function crmState() {
+  const state = await getJson("http://127.0.0.1:4314/__state");
+  return {
+    status: state.status,
+    notes: Array.isArray(state.json?.notes) ? state.json.notes : [],
+    contacts: Array.isArray(state.json?.contacts) ? state.json.contacts : [],
+  };
+}
+
+async function runThreadRunIds(cookie, threadId) {
+  const [active, recent] = await Promise.all([
+    rpc(cookie, "runs/list", { filter: "active" }),
+    rpc(cookie, "runs/list", { filter: "recent" }),
+  ]);
+  return new Set(
+    [...(active.runs ?? []), ...(recent.runs ?? [])]
+      .filter((row) => row.threadId === threadId)
+      .map((row) => row.runId),
+  );
+}
+
+async function runRowFor(cookie, runId) {
+  const [active, recent] = await Promise.all([
+    rpc(cookie, "runs/list", { filter: "active" }),
+    rpc(cookie, "runs/list", { filter: "recent" }),
+  ]);
+  return [...(active.runs ?? []), ...(recent.runs ?? [])].find((row) => row.runId === runId) ?? null;
+}
+
+function isSubsetOf(left, right) {
+  return [...left].every((id) => right.has(id));
+}
+
+async function runCase09(cookie, item, reset, modelState) {
+  const checks = [];
+  const add = (name, pass, detail) => {
+    checks.push({ name, pass, detail });
+    console.log(`  ${pass ? "PASS" : "FAIL"} ${name}: ${detail}`);
+  };
+
+  const bots = await rpc(cookie, "bots/list");
+  const inbox = bots.find((bot) => bot.name === "收件箱");
+  add("收件箱 exists", Boolean(inbox), `bot=${inbox?.id ?? "missing"}`);
+  if (!inbox) {
+    return { id: item.id, status: "FAIL", reason: "missing_bot", reset, model: modelState, assertions: checks };
+  }
+
+  await rpc(cookie, "threads/clear", { botId: inbox.id });
+  await postJson("http://127.0.0.1:4314/__reset");
+  await postJson("http://127.0.0.1:4312/__reset");
+  const baselineCrm = await crmState();
+  const baselineGmail = await gmailSentState();
+  add("CRM starts with 0 notes", baselineCrm.notes.length === 0, `notes=${baselineCrm.notes.length}`);
+  add("Gmail starts with 0 sent", baselineGmail.sent.length === 0, `sent=${baselineGmail.sent.length}`);
+
+  const target = {
+    kind: "bot",
+    botId: inbox.id,
+    threadId: inbox.threadId,
+    members: [{ botId: inbox.id, name: inbox.name }],
+  };
+  const sent = await sendCase(cookie, item, target);
+  const runIds = sent.runIds;
+  const runId = runIds[0];
+  console.log(`  runIds: ${runIds.join(", ")}`);
+  const firstWait = await waitForRuns(cookie, runIds, 300_000);
+  const firstStatus = firstWait.runs?.[0]?.status;
+  const firstSnapshot = await botSnapshot(cookie, inbox.id);
+  const crmCard = findPendingApproval(firstSnapshot, runId, /CRM_CREATE_NOTE/i);
+  add("first approval is CRM note", Boolean(crmCard), crmCard ? `message=${crmCard.message.id}` : "no CRM_CREATE_NOTE card");
+  add("run waits on CRM approval", firstStatus === "waiting_input", `status=${firstStatus ?? "?"}`);
+  const firstCrm = await crmState();
+  const firstGmail = await gmailSentState();
+  add("CRM notes=0 before approval", firstCrm.notes.length === 0, `notes=${firstCrm.notes.length}`);
+  add("Gmail sent=0 before approval", firstGmail.sent.length === 0, `sent=${firstGmail.sent.length}`);
+  if (!crmCard) {
+    console.log(
+      `  evidence no CRM approval: run=${runId} status=${firstStatus ?? "?"}; ${runEvidence(firstSnapshot, runId)}; ask=${runAskPayloads(firstSnapshot, runId)}; crmNotes=${firstCrm.notes.length}; gmailSent=${firstGmail.sent.length}`,
+    );
+    const passed = checks.every((check) => check.pass);
+    console.log(`  result: ${passed ? "PASS" : "FAIL"}`);
+    return { id: item.id, status: passed ? "PASS" : "FAIL", reason: "assertions_failed", reset, model: modelState, assertions: checks };
+  }
+
+  const beforeCrmRefresh = await runThreadRunIds(cookie, inbox.threadId);
+  const crmRefreshSnapshot = await botSnapshot(cookie, inbox.id);
+  const crmRefreshCard = findPendingApproval(crmRefreshSnapshot, runId, /CRM_CREATE_NOTE/i);
+  const crmRefreshRow = await runRowFor(cookie, runId);
+  const afterCrmRefresh = await runThreadRunIds(cookie, inbox.threadId);
+  add(
+    "refresh keeps the same CRM card",
+    crmRefreshCard?.message.id === crmCard.message.id &&
+      crmRefreshCard?.block.approvalEffectId === crmCard.block.approvalEffectId,
+    `message=${crmRefreshCard?.message.id ?? "missing"}`,
+  );
+  add("refresh keeps run waiting", crmRefreshRow?.status === "waiting_input", `status=${crmRefreshRow?.status ?? "?"}`);
+  add("refresh creates no new run", isSubsetOf(afterCrmRefresh, beforeCrmRefresh), `runs=${afterCrmRefresh.size}`);
+
+  await rpc(cookie, "threads/answer", {
+    botId: inbox.id,
+    runId,
+    messageId: crmCard.message.id,
+    answer: "allow",
+  });
+  const afterCrmWait = await waitForRuns(cookie, [runId], 300_000);
+  const afterCrmStatus = afterCrmWait.runs?.[0]?.status;
+  const crmAfter = await crmState();
+  add("CRM note exactly 1", crmAfter.notes.length === 1, `notes=${crmAfter.notes.length}`);
+  if (crmAfter.notes.length === 1) {
+    const note = crmAfter.notes[0];
+    const noteText = normalizeForMatch(note.body);
+    add("CRM note targets 远山科技", note.contactId === "customer-yuanshan", `contactId=${note.contactId}`);
+    add("CRM note carries contract amount", /48\s*万|480,?000/.test(noteText), `body=${String(note.body).slice(0, 160)}`);
+    add("CRM note mentions contract/amount", /合同|金额/.test(noteText), `body=${String(note.body).slice(0, 160)}`);
+  }
+  const secondSnapshot = await botSnapshot(cookie, inbox.id);
+  const emailCard = findPendingApproval(secondSnapshot, runId, /GMAIL_SEND_EMAIL/i);
+  add(
+    "second approval is email send",
+    afterCrmStatus === "waiting_input" && Boolean(emailCard),
+    `status=${afterCrmStatus ?? "?"}, card=${emailCard?.message.id ?? "missing"}`,
+  );
+  add("Gmail sent=0 before email approval", (await gmailSentState()).sent.length === 0, `sent=${(await gmailSentState()).sent.length}`);
+  if (!emailCard) {
+    console.log(
+      `  evidence no email approval: run=${runId} status=${afterCrmStatus ?? "?"}; ${runEvidence(secondSnapshot, runId)}; ask=${runAskPayloads(secondSnapshot, runId)}; crmNotes=${crmAfter.notes.length}`,
+    );
+    const passed = checks.every((check) => check.pass);
+    console.log(`  result: ${passed ? "PASS" : "FAIL"}`);
+    return { id: item.id, status: passed ? "PASS" : "FAIL", reason: "assertions_failed", reset, model: modelState, assertions: checks };
+  }
+
+  const beforeEmailRefresh = await runThreadRunIds(cookie, inbox.threadId);
+  const emailRefreshSnapshot = await botSnapshot(cookie, inbox.id);
+  const emailRefreshCard = findPendingApproval(emailRefreshSnapshot, runId, /GMAIL_SEND_EMAIL/i);
+  const emailRefreshRow = await runRowFor(cookie, runId);
+  const afterEmailRefresh = await runThreadRunIds(cookie, inbox.threadId);
+  add(
+    "refresh keeps the same email card",
+    emailRefreshCard?.message.id === emailCard.message.id &&
+      emailRefreshCard?.block.approvalEffectId === emailCard.block.approvalEffectId,
+    `message=${emailRefreshCard?.message.id ?? "missing"}`,
+  );
+  add("email run still waiting", emailRefreshRow?.status === "waiting_input", `status=${emailRefreshRow?.status ?? "?"}`);
+  add("email refresh creates no new run", isSubsetOf(afterEmailRefresh, beforeEmailRefresh), `runs=${afterEmailRefresh.size}`);
+
+  await rpc(cookie, "threads/answer", {
+    botId: inbox.id,
+    runId,
+    messageId: emailCard.message.id,
+    answer: "allow",
+  });
+  const finalWait = await waitForRuns(cookie, [runId], 300_000);
+  const finalStatus = finalWait.runs?.[0]?.status;
+  add("run terminal after both approvals", TERMINAL.has(finalStatus), `status=${finalStatus ?? "?"}`);
+  const gmailAfter = await gmailSentState();
+  add("email sent exactly 1", gmailAfter.sent.length === 1, `sent=${gmailAfter.sent.length}`);
+  if (gmailAfter.sent.length === 1) {
+    const record = gmailAfter.sent[0];
+    add("email recipient is 李总", /li@yuanshan\.example|李总/i.test(String(record.to ?? "")), `to=${record.to ?? "?"}`);
+    add(
+      "email is a quote",
+      /报价|续约/.test(normalizeForMatch(`${record.subject ?? ""} ${record.body ?? ""}`)),
+      `subject=${record.subject ?? "?"}`,
+    );
+  }
+  const finalCrm = await crmState();
+  const finalGmail = await gmailSentState();
+  add("refresh keeps CRM notes at 1", finalCrm.notes.length === 1, `notes=${finalCrm.notes.length}`);
+  add("refresh keeps Gmail sent at 1", finalGmail.sent.length === 1, `sent=${finalGmail.sent.length}`);
+  const finalRuns = await runThreadRunIds(cookie, inbox.threadId);
+  add("no extra run after both approvals", isSubsetOf(finalRuns, beforeCrmRefresh), `runs=${finalRuns.size}`);
+
+  const passed = checks.every((check) => check.pass);
+  console.log(`  result: ${passed ? "PASS" : "FAIL"}`);
+  return {
+    id: item.id,
+    status: passed ? "PASS" : "FAIL",
+    reason: passed ? "assertions_passed" : "assertions_failed",
+    reset,
+    model: modelState,
+    assertions: checks,
+  };
+}
+
+async function memoryDocs(cookie, botId, scope) {
+  return rpc(cookie, "memory/list", scope === "user" ? { scope: "user" } : { botId, scope: "bot" });
+}
+
+async function resetMemoryForCase12(cookie, bots) {
+  const preference = /远山|一页纸|Asia\/Shanghai|李总/;
+  for (const bot of bots) {
+    const docs = await memoryDocs(cookie, bot.id, "bot");
+    for (const doc of docs) {
+      if (!preference.test(doc.content)) continue;
+      if (doc.path === "MEMORY.md") {
+        await rpc(cookie, "memory/update", {
+          documentId: doc.id,
+          content: `# ${bot.name}\n`,
+          expectedRevision: doc.revision,
+        });
+      } else {
+        await rpc(cookie, "memory/remove", { documentId: doc.id });
+      }
+    }
+  }
+  const userDocs = await memoryDocs(cookie, null, "user");
+  for (const doc of userDocs) {
+    if (!preference.test(doc.content)) continue;
+    if (doc.path === "MEMORY.md") {
+      await rpc(cookie, "memory/update", {
+        documentId: doc.id,
+        content: "# Space memory\n\nPreferences and context kept within this space live here.\n",
+        expectedRevision: doc.revision,
+      });
+    } else {
+      await rpc(cookie, "memory/remove", { documentId: doc.id });
+    }
+  }
+}
+
+async function runCase12(cookie, item, reset, modelState) {
+  const checks = [];
+  const add = (name, pass, detail) => {
+    checks.push({ name, pass, detail });
+    console.log(`  ${pass ? "PASS" : "FAIL"} ${name}: ${detail}`);
+  };
+
+  const bots = await rpc(cookie, "bots/list");
+  const chief = bots.find((bot) => bot.name === "总管");
+  const research = bots.find((bot) => bot.name === "研究");
+  add("总管 and 研究 exist", Boolean(chief && research), `chief=${chief?.id ?? "missing"}, research=${research?.id ?? "missing"}`);
+  if (!chief || !research) {
+    return { id: item.id, status: "FAIL", reason: "missing_bots", reset, model: modelState, assertions: checks };
+  }
+
+  await rpc(cookie, "threads/clear", { botId: chief.id });
+  await resetMemoryForCase12(cookie, bots);
+  const cleaned = [...(await memoryDocs(cookie, chief.id, "bot")), ...(await memoryDocs(cookie, null, "user"))]
+    .map((doc) => doc.content)
+    .join("\n");
+  add("memory cleaned before the test", !/远山|一页纸|Asia\/Shanghai|李总/.test(cleaned), "no stale 远山 preference");
+
+  const turnStart = new Date().toISOString();
+  const turn1 = await rpc(cookie, "threads/send", { botId: chief.id, text: item.turns[0] });
+  const turn1Ids = Array.isArray(turn1.runIds) && turn1.runIds.length > 0 ? turn1.runIds : [turn1.runId];
+  const turn1Wait = await waitForRuns(cookie, turn1Ids, 300_000);
+  add("turn 1 completed", turn1Wait.runs?.[0]?.status === "completed", `status=${turn1Wait.runs?.[0]?.status ?? "?"}`);
+
+  const chiefMemory = await memoryDocs(cookie, chief.id, "bot");
+  const userMemory = await memoryDocs(cookie, null, "user");
+  const memoryText = [...chiefMemory, ...userMemory].map((doc) => doc.content).join("\n");
+  const preferences = ["中文", "一页纸", "Asia/Shanghai", "李总"];
+  const missingPreferences = preferences.filter((term) => !memoryText.includes(term));
+  add(
+    "memory/list contains four 远山 preferences",
+    missingPreferences.length === 0,
+    missingPreferences.length > 0 ? `missing=${missingPreferences.join(", ")}` : "中文/一页纸/Asia/Shanghai/李总",
+  );
+  const memoryUpdated = [...chiefMemory, ...userMemory].some(
+    (doc) => new Date(doc.updatedAt) >= new Date(turnStart),
+  );
+  add("memory was written after turn 1", memoryUpdated, `docs=${chiefMemory.length + userMemory.length}`);
+
+  const otherMemory = [...(await memoryDocs(cookie, research.id, "bot")), ...(await memoryDocs(cookie, null, "user"))]
+    .map((doc) => doc.content)
+    .join("\n");
+  add(
+    "another bot cannot see the preference",
+    !/远山|一页纸|Asia\/Shanghai|李总/.test(otherMemory),
+    "研究 + user scope",
+  );
+
+  await rpc(cookie, "threads/clear", { botId: chief.id });
+  const turn2 = await rpc(cookie, "threads/send", { botId: chief.id, text: item.turns[1] });
+  const turn2Ids = Array.isArray(turn2.runIds) && turn2.runIds.length > 0 ? turn2.runIds : [turn2.runId];
+  const turn2Wait = await waitForRuns(cookie, turn2Ids, 300_000);
+  add("turn 2 completed", turn2Wait.runs?.[0]?.status === "completed", `status=${turn2Wait.runs?.[0]?.status ?? "?"}`);
+  const snapshot = await botSnapshot(cookie, chief.id);
+  const reply = (snapshot.messages ?? [])
+    .filter((message) => message.role === "bot" && message.runId === turn2Ids[0])
+    .map(messageText)
+    .join("\n");
+  const text = normalizeForMatch(reply);
+  add(
+    "new session gives 11-05 16:00 agenda",
+    /11-05|11月5日|2026年11月5日|2026\s*年\s*11\s*月\s*5\s*日/.test(text) &&
+      text.includes("16:00") &&
+      text.includes("议程"),
+    text.slice(0, 260) || "no reply",
+  );
+  add("new session uses 李总", text.includes("李总"), text.slice(0, 160) || "no reply");
+  add("new session is Chinese", /[\u4e00-\u9fff]/.test(text), "has Chinese characters");
+  add(
+    "new session does not re-ask preferences",
+    !/什么语言|用哪种语言|哪个时区|时区是|怎么称呼|如何称呼|称呼您|您希望我叫/.test(text),
+    text.slice(0, 240) || "no reply",
+  );
+  const otherAfter = [...(await memoryDocs(cookie, research.id, "bot")), ...(await memoryDocs(cookie, null, "user"))]
+    .map((doc) => doc.content)
+    .join("\n");
+  add(
+    "another bot still cannot see the preference",
+    !/远山|一页纸|Asia\/Shanghai|李总/.test(otherAfter),
+    "研究 + user scope",
+  );
+
+  if (text === "") {
+    console.log(`  evidence: turn2=${turn2Ids[0]} status=${turn2Wait.runs?.[0]?.status ?? "?"}; memory=${memoryText.slice(0, 300)}`);
+  }
+  const passed = checks.every((check) => check.pass);
+  console.log(`  result: ${passed ? "PASS" : "FAIL"}`);
+  return {
+    id: item.id,
+    status: passed ? "PASS" : "FAIL",
+    reason: passed ? "assertions_passed" : "assertions_failed",
+    reset,
+    model: modelState,
+    assertions: checks,
+  };
+}
+
+async function portalState() {
+  const state = await getJson("http://127.0.0.1:4311/__state");
+  return {
+    status: state.status,
+    sessions: state.json?.sessions ?? 0,
+    unread: state.json?.unread ?? 0,
+  };
+}
+
+async function profileNames(cookie, botId) {
+  const entries = await listComputerFiles(cookie, botId, "/.browser-profiles");
+  return (entries ?? []).map((entry) => entry.path).sort();
+}
+
+function hasThreeUnread(text) {
+  const plain = String(text).replace(/[*_`]/g, "");
+  return /(?:3\s*unread|3\s*条未读|三条未读|3\s*封未读|未读(?:消息|邮件)?\s*(?:共|:|：)?\s*3\s*(?:条|封))/i.test(plain);
+}
+
+function listsM4M5AsTodo(rawText) {
+  return String(rawText)
+    .split("\n")
+    .some((line) => {
+      if (!/(?:行业周报|周报|午餐)/.test(line)) return false;
+      if (/不列|不含|排除|不计入|不需要|不会出现|无需|不用|忽略|不作为|不占用/.test(line)) {
+        return false;
+      }
+      return /^\s*(?:\d+[.)、]|[-*•]|\|)/.test(line);
+    });
+}
+
+async function runCase06(cookie, item, reset, modelState) {
+  const checks = [];
+  const add = (name, pass, detail) => {
+    checks.push({ name, pass, detail });
+    console.log(`  ${pass ? "PASS" : "FAIL"} ${name}: ${detail}`);
+  };
+
+  const target = await resolveTarget(cookie, item);
+  const inbox = target.members.find((member) => member.name === "收件箱");
+  const schedule = target.members.find((member) => member.name === "日程");
+  add(
+    "group has 收件箱/日程",
+    Boolean(inbox && schedule),
+    `inbox=${inbox?.botId ?? "missing"}, schedule=${schedule?.botId ?? "missing"}`,
+  );
+  if (!inbox || !schedule) {
+    return { id: item.id, status: "FAIL", reason: "missing_members", reset, model: modelState, assertions: checks };
+  }
+
+  const inboxBoot = await rpc(cookie, "computer/boot", { botId: inbox.botId });
+  const scheduleBoot = await rpc(cookie, "computer/boot", { botId: schedule.botId });
+  add("both computers running", inboxBoot.state === "running" && scheduleBoot.state === "running", `inbox=${inboxBoot.state}, schedule=${scheduleBoot.state}`);
+
+  const sent = await sendCase(cookie, item, target);
+  console.log(`  target: group ${target.groupId}`);
+  console.log(`  runIds: ${sent.runIds.join(", ")}`);
+  const waited = await waitForRuns(cookie, sent.runIds, 300_000);
+  const inboxRun = waited.runs.find((run) => run.botName === "收件箱") ?? null;
+  const scheduleRun = waited.runs.find((run) => run.botName === "日程") ?? null;
+  add("收件箱 run completed", inboxRun?.status === "completed", `status=${inboxRun?.status ?? "?"}`);
+  add("日程 run completed", scheduleRun?.status === "completed", `status=${scheduleRun?.status ?? "?"}`);
+
+  const snapshot = await rpc(cookie, "threads/get", { groupId: target.groupId });
+  const inboxText = combinedRunText(snapshot, inboxRun?.runId);
+  const scheduleText = combinedRunText(snapshot, scheduleRun?.runId);
+  const inboxSteps = combinedRunSteps(snapshot, inboxRun?.runId);
+  const scheduleSteps = combinedRunSteps(snapshot, scheduleRun?.runId);
+  add(
+    "收件箱 used the browser",
+    inboxSteps.some((label) => /browser|computer_observe|computer_act/i.test(label)),
+    `steps=${inboxSteps.join(" | ") || "none"}`,
+  );
+  add(
+    "日程 used the browser",
+    scheduleSteps.some((label) => /browser|computer_observe|computer_act/i.test(label)),
+    `steps=${scheduleSteps.join(" | ") || "none"}`,
+  );
+  const inboxLoggedIn =
+    /Signed in as inbox@demo\.test/i.test(inboxText) ||
+    (/inbox@demo\.test/i.test(inboxText) &&
+      /已登录|登录成功|登录状态正常/i.test(inboxText));
+  add(
+    "收件箱 sees Signed in as inbox@demo.test and 3 unread",
+    inboxLoggedIn && hasThreeUnread(inboxText),
+    inboxText.slice(0, 260) || "no inbox text",
+  );
+  add(
+    "日程 sees the login page, not the inbox account",
+    /Sign in|登录页|未登录|需要登录/i.test(scheduleText) &&
+      !/Signed in as inbox@demo\.test/i.test(scheduleText),
+    scheduleText.slice(0, 260) || "no schedule text",
+  );
+
+  const inboxProfiles = await profileNames(cookie, inbox.botId);
+  const scheduleProfiles = await profileNames(cookie, schedule.botId);
+  add(
+    "browser profiles differ",
+    inboxProfiles.length > 0 &&
+      scheduleProfiles.length > 0 &&
+      JSON.stringify(inboxProfiles) !== JSON.stringify(scheduleProfiles),
+    `inbox=${inboxProfiles.join(",") || "none"}; schedule=${scheduleProfiles.join(",") || "none"}`,
+  );
+  const portalAfterGroup = await portalState();
+  add(
+    "portal has one login session and 3 unread",
+    portalAfterGroup.sessions >= 1 && portalAfterGroup.unread === 3,
+    `sessions=${portalAfterGroup.sessions}, unread=${portalAfterGroup.unread}`,
+  );
+
+  await rpc(cookie, "threads/clear", { botId: inbox.botId });
+  const reopen = await rpc(cookie, "threads/send", {
+    botId: inbox.botId,
+    text: "再打开 http://host.docker.internal:4311/inbox 刷新一下，确认还登录着",
+  });
+  const reopenIds = Array.isArray(reopen.runIds) && reopen.runIds.length > 0 ? reopen.runIds : [reopen.runId];
+  const reopenWait = await waitForRuns(cookie, reopenIds, 300_000);
+  const reopenSnapshot = await botSnapshot(cookie, inbox.botId);
+  const reopenText = combinedRunText(reopenSnapshot, reopenIds[0]);
+  const reopenLoggedIn =
+    /Signed in as inbox@demo\.test/i.test(reopenText) ||
+    (/inbox@demo\.test/i.test(reopenText) &&
+      /Sign out|退出|仍.{0,40}登录|已登录|登录.{0,10}有效|未.{0,10}登出/i.test(reopenText));
+  add(
+    "收件箱 reopen stays signed in with 3 unread",
+    reopenWait.runs?.[0]?.status === "completed" &&
+      reopenLoggedIn &&
+      hasThreeUnread(reopenText),
+    reopenText.slice(0, 260) || "no reopen text",
+  );
+  const portalFinal = await portalState();
+  add("portal still has 3 unread", portalFinal.unread === 3, `sessions=${portalFinal.sessions}, unread=${portalFinal.unread}`);
+
+  if (!inboxText || !scheduleText) {
+    console.log(`  evidence: inbox=${inboxRun?.runId ?? "none"}/${inboxRun?.status ?? "?"}; schedule=${scheduleRun?.runId ?? "none"}/${scheduleRun?.status ?? "?"}; steps inbox=${inboxSteps.join(" | ") || "none"}; steps schedule=${scheduleSteps.join(" | ") || "none"}`);
+  }
+  const passed = checks.every((check) => check.pass);
+  console.log(`  result: ${passed ? "PASS" : "FAIL"}`);
+  return {
+    id: item.id,
+    status: passed ? "PASS" : "FAIL",
+    reason: passed ? "assertions_passed" : "assertions_failed",
+    reset,
+    model: modelState,
+    assertions: checks,
+  };
+}
+
+async function runCase05(cookie, item, reset, modelState) {
+  const checks = [];
+  const add = (name, pass, detail) => {
+    checks.push({ name, pass, detail });
+    console.log(`  ${pass ? "PASS" : "FAIL"} ${name}: ${detail}`);
+  };
+
+  const bots = await rpc(cookie, "bots/list");
+  const inbox = bots.find((bot) => bot.name === "收件箱");
+  const chief = bots.find((bot) => bot.name === "总管");
+  add("收件箱 and 总管 exist", Boolean(inbox && chief), `inbox=${inbox?.id ?? "missing"}, chief=${chief?.id ?? "missing"}`);
+  if (!inbox || !chief) {
+    return { id: item.id, status: "FAIL", reason: "missing_bots", reset, model: modelState, assertions: checks };
+  }
+
+  await rpc(cookie, "threads/clear", { botId: inbox.id });
+  await rpc(cookie, "threads/clear", { botId: chief.id });
+  const beforeGmail = await gmailSentState();
+  const beforeCalendar = await calendarEventsState();
+  const beforeFiles = await snapshotHomeFiles(cookie, inbox.id);
+  const beforeRunIds = await recentRunIds(cookie);
+
+  const sent = await rpc(cookie, "threads/send", { botId: inbox.id, text: item.input });
+  const inboxIds = Array.isArray(sent.runIds) && sent.runIds.length > 0 ? sent.runIds : [sent.runId];
+  const inboxWait = await waitForRuns(cookie, inboxIds, 300_000);
+  const inboxRunId = inboxIds[0];
+  add("收件箱 run completed", inboxWait.runs?.[0]?.status === "completed", `status=${inboxWait.runs?.[0]?.status ?? "?"}`);
+
+  const inboxSnapshot = await botSnapshot(cookie, inbox.id);
+  const resultEntry = findBlock(
+    inboxSnapshot,
+    (block) => block.kind === "bot_message_sent" && block.toBotId === chief.id && block.intent === "result",
+  );
+  const runFileBlocks = (inboxSnapshot.messages ?? [])
+    .filter((message) => message.runId === inboxRunId)
+    .flatMap((message) => (message.blocks ?? []).filter((block) => block.kind === "file"));
+  add("收件箱 sent a result message", Boolean(resultEntry), resultEntry ? `message=${resultEntry.message.id}` : "no bot_message_sent intent=result");
+  add(
+    "bot message carries an attachment",
+    Boolean(resultEntry?.message.blocks.some((block) => block.kind === "file")),
+    `fileBlocks=${runFileBlocks.map((block) => block.name).join(",") || "none"}`,
+  );
+
+  const chiefRun = await waitForNewRun(
+    cookie,
+    beforeRunIds,
+    (row) => row.botName === "总管" && row.trigger === "bot_message",
+    120_000,
+  );
+  let chiefSnapshot = null;
+  let received = null;
+  let chiefReply = "";
+  if (chiefRun) {
+    await waitForRuns(cookie, [chiefRun.runId], 300_000);
+    chiefSnapshot = await botSnapshot(cookie, chief.id);
+    received = findBlock(
+      chiefSnapshot,
+      (block) => block.kind === "bot_message_received" && block.fromBotId === inbox.id,
+    );
+    chiefReply = combinedRunText(chiefSnapshot, chiefRun.runId);
+  }
+  add("总管 received the bot message", Boolean(received), received ? `message=${received.message.id}` : "no bot_message_received");
+  add(
+    "总管 received the attachment",
+    Boolean(received?.message.blocks.some((block) => block.kind === "file")),
+    received ? `blocks=${received.message.blocks.map((block) => block.kind).join(",")}` : "no message",
+  );
+  const receivedAttachment = Boolean(
+    received?.message.blocks.some((block) => block.kind === "file"),
+  );
+  add(
+    "总管 restates the agenda",
+    receivedAttachment &&
+      /11-05|11月5日|2026\s*年\s*11\s*月\s*5\s*日/.test(normalizeForMatch(chiefReply)) &&
+      normalizeForMatch(chiefReply).includes("16:00") &&
+      normalizeForMatch(chiefReply).includes("李总"),
+    chiefReply.slice(0, 260) || "no chief reply",
+  );
+
+  const afterFiles = await snapshotHomeFiles(cookie, inbox.id);
+  const changed = [];
+  for (const [path, size] of afterFiles) {
+    if (!path.endsWith(".md") || path.startsWith("/shared/")) continue;
+    const beforeSize = beforeFiles.get(path);
+    if (beforeSize === undefined || beforeSize !== size) changed.push(path);
+  }
+  let agendaFile = null;
+  for (const path of changed) {
+    const content = await readComputerFile(cookie, inbox.id, path);
+    if (
+      content &&
+      /11-05|11月5日|2026\s*年\s*11\s*月\s*5\s*日/.test(content) &&
+      content.includes("16:00") &&
+      content.includes("李总") &&
+      content.includes("议程")
+    ) {
+      agendaFile = { path, content };
+      break;
+    }
+  }
+  add(
+    "agenda file exists in 收件箱 own home",
+    Boolean(agendaFile),
+    agendaFile?.path ?? `changed=${changed.join(",") || "none"}`,
+  );
+
+  const afterGmail = await gmailSentState();
+  const afterCalendar = await calendarEventsState();
+  add(
+    "no external write",
+    afterGmail.sent.length === 0 &&
+      JSON.stringify(afterCalendar.events) === JSON.stringify(beforeCalendar.events),
+    `gmailSent=${afterGmail.sent.length}, calendarEvents=${afterCalendar.events.length}`,
+  );
+
+  if (!resultEntry || !received) {
+    console.log(
+      `  evidence: inboxRun=${inboxRunId}/${inboxWait.runs?.[0]?.status ?? "?"}; resultText=${resultEntry?.block?.text ?? "none"}; fileBlocks=${runFileBlocks.map((block) => block.name).join(",") || "none"}; chiefRun=${chiefRun?.runId ?? "none"}; receivedText=${received?.block?.text?.slice(0, 200) ?? "none"}`,
+    );
+  }
+  const passed = checks.every((check) => check.pass);
+  console.log(`  result: ${passed ? "PASS" : "FAIL"}`);
+  return {
+    id: item.id,
+    status: passed ? "PASS" : "FAIL",
+    reason: passed ? "assertions_passed" : "assertions_failed",
+    reset,
+    model: modelState,
+    assertions: checks,
+  };
+}
+
+async function resetIsolationState(cookie) {
+  const bots = await rpc(cookie, "bots/list");
+  const research = bots.find((bot) => bot.name === "研究");
+  for (const bot of bots) {
+    await rpc(cookie, "threads/clear", { botId: bot.id }).catch(() => undefined);
+    await clearBotScratchpad(cookie, bot.id).catch(() => undefined);
+    const routines = await rpc(cookie, "routines/list", { botId: bot.id }).catch(() => []);
+    for (const routine of routines) {
+      await rpc(cookie, "routines/remove", { routineId: routine.id }).catch(() => undefined);
+    }
+    const docs = await memoryDocs(cookie, bot.id, "bot").catch(() => []);
+    for (const doc of docs) {
+      if (doc.path === "MEMORY.md") {
+        await rpc(cookie, "memory/update", {
+          documentId: doc.id,
+          content: `# ${bot.name}\n`,
+          expectedRevision: doc.revision,
+        }).catch(() => undefined);
+      } else {
+        await rpc(cookie, "memory/remove", { documentId: doc.id }).catch(() => undefined);
+      }
+    }
+  }
+  const userDocs = await memoryDocs(cookie, null, "user").catch(() => []);
+  for (const doc of userDocs) {
+    if (doc.path === "MEMORY.md") {
+      await rpc(cookie, "memory/update", {
+        documentId: doc.id,
+        content: "# Space memory\n\nPreferences and context kept within this space live here.\n",
+        expectedRevision: doc.revision,
+      }).catch(() => undefined);
+    } else {
+      await rpc(cookie, "memory/remove", { documentId: doc.id }).catch(() => undefined);
+    }
+  }
+  const groups = await rpc(cookie, "groups/list").catch(() => []);
+  for (const group of groups) {
+    await rpc(cookie, "threads/clear", { groupId: group.id }).catch(() => undefined);
+  }
+  if (research) await clearMonitoringArtifacts(research.id);
+}
+
 async function runModelCase(cookie, item) {
   const reset = await resetFixtures();
   console.log(`\n[${item.id}] ${item.title}`);
@@ -1582,6 +2435,7 @@ async function runModelCase(cookie, item) {
     return { id: item.id, status: "UNQUALIFIED", reason: "fixture_reset_failed", reset };
   }
 
+  await resetIsolationState(cookie);
   const modelState = await detectModel(cookie);
   console.log(
     `  model: ${modelState.configured ? "configured" : "not configured"} (credentials=${modelState.credentialCount})`,
@@ -1592,6 +2446,18 @@ async function runModelCase(cookie, item) {
       id: item.id,
       status: "UNQUALIFIED",
       reason: "model_not_configured",
+      reset,
+      model: modelState,
+    };
+  }
+  if (item.blocked) {
+    console.log("  result: BLOCKED (platform_no_peer_attachment)");
+    for (const blocker of item.blockers ?? []) console.log(`  blocker: ${blocker}`);
+    return {
+      id: item.id,
+      status: "BLOCKED",
+      reason: "platform_no_peer_attachment",
+      blockers: item.blockers ?? [],
       reset,
       model: modelState,
     };
@@ -1619,6 +2485,26 @@ async function runModelCase(cookie, item) {
   if (item.id === "02") {
     console.log("  flow: 新建群，总管→研究→日程 handoff 链");
     return await runCase02(cookie, item, reset, modelState);
+  }
+  if (item.id === "04") {
+    console.log("  flow: 研究 Bot 电脑浏览器生成竞品速报，存自己目录");
+    return await runCase04(cookie, item, reset, modelState);
+  }
+  if (item.id === "09") {
+    console.log("  flow: 收件箱直接处理 CRM 备注→报价邮件，两次审批");
+    return await runCase09(cookie, item, reset, modelState);
+  }
+  if (item.id === "12") {
+    console.log("  flow: 总管记住远山偏好 → 清空线程 → 新会话按老规矩出议程");
+    return await runCase12(cookie, item, reset, modelState);
+  }
+  if (item.id === "06") {
+    console.log("  flow: 新建群，收件箱登录客户门户，日程只看登录页，再验证收件箱重开");
+    return await runCase06(cookie, item, reset, modelState);
+  }
+  if (item.id === "05") {
+    console.log("  flow: 收件箱做议程文件并通过消息交总管，验证消息附件与总管读取");
+    return await runCase05(cookie, item, reset, modelState);
   }
 
   const target = await resolveTarget(cookie, item);
@@ -1829,9 +2715,10 @@ async function main() {
     for (const item of CASES) results.push(await runModelCase(cookie, item));
     const count = (status) => results.filter((result) => result.status === status).length;
     console.log(
-      `\nSUMMARY total=${results.length} pass=${count("PASS")} fail=${count("FAIL")} unqualified=${count("UNQUALIFIED")}`,
+      `\nSUMMARY total=${results.length} pass=${count("PASS")} fail=${count("FAIL")} blocked=${count("BLOCKED")} unqualified=${count("UNQUALIFIED")}`,
     );
-    process.exitCode = count("FAIL") > 0 ? 1 : count("UNQUALIFIED") > 0 ? 2 : 0;
+    process.exitCode =
+      count("FAIL") > 0 ? 1 : count("UNQUALIFIED") > 0 || count("BLOCKED") > 0 ? 2 : 0;
     return;
   }
 
