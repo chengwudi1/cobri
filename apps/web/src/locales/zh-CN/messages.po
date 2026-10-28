@@ -110,6 +110,11 @@ msgstr ""
 msgid "{0} TB"
 msgstr "{0} TB"
 
+#. placeholder {0}: routines.length
+#: src/pages/Overview.tsx
+msgid "{0} total"
+msgstr "共 {0} 个"
+
 #. placeholder {0}: bot.name
 #: src/pages/ExternalConversationSettings.tsx
 msgid "{0} will still respond to direct mentions."
@@ -187,6 +192,10 @@ msgstr "{label}，空"
 #: src/lib/relative-time.ts
 msgid "{minutes}m ago"
 msgstr "{minutes} 分钟前"
+
+#: src/pages/Overview.tsx
+msgid "{modelCalls} model calls"
+msgstr "{modelCalls} 次模型调用"
 
 #: src/pages/model-settings/space-bots-model.tsx
 msgid "{moved, plural, one {# bot now uses the space default.} other {# bots now use the space default.}}"
@@ -431,9 +440,14 @@ msgid "Actions for space"
 msgstr ""
 
 #: src/pages/BillingSettingsPanel.tsx
+#: src/pages/Overview.tsx
 #: src/pages/RoutineEditor.tsx
 msgid "Active"
 msgstr "启用"
+
+#: src/pages/Overview.tsx
+msgid "Active routines"
+msgstr "活跃例行任务"
 
 #: src/pages/shell/sidebar-header.tsx
 msgid "Activity"
@@ -785,6 +799,10 @@ msgstr "审批模型"
 msgid "Approvals"
 msgstr "审批"
 
+#: src/pages/Overview.tsx
+msgid "Approvals / input"
+msgstr "待审批/输入"
+
 #: src/pages/MessagingSettingsPanel.tsx
 #: src/pages/shell/message-cards.tsx
 msgid "Approve"
@@ -813,11 +831,15 @@ msgstr "参数"
 #: src/components/SidebarFooter.tsx
 #: src/pages/Artifacts.tsx
 msgid "Artifacts"
-msgstr ""
+msgstr "产物"
 
 #: src/components/ApprovalRulesSettings.tsx
 msgid "Ask"
 msgstr "询问"
+
+#: src/pages/Overview.tsx
+msgid "Assistant"
+msgstr "工作助理"
 
 #. placeholder {0}: preset.time
 #: src/lib/cron.ts
@@ -945,7 +967,7 @@ msgstr ""
 #: src/components/SidebarFooter.tsx
 #: src/pages/Board.tsx
 msgid "Board"
-msgstr ""
+msgstr "看板"
 
 #: src/pages/shell/computer-view.tsx
 #: src/pages/shell/use-computer.tsx
@@ -959,6 +981,7 @@ msgstr "Bot"
 #: src/lib/identity-display.ts
 #: src/pages/IntegrationSetup.tsx
 #: src/pages/MessagingSettingsPanel.tsx
+#: src/pages/Overview.tsx
 #: src/pages/Shell.tsx
 #: src/pages/shell/agent-import.tsx
 #: src/pages/shell/avatar-studio-popover.tsx
@@ -974,6 +997,10 @@ msgstr "Bot"
 #: src/components/teach/TeachRecordingChrome.tsx
 msgid "Bot is watching, not acting"
 msgstr "Bot 只看不操作"
+
+#: src/pages/Overview.tsx
+msgid "Bot message"
+msgstr "Bot 消息"
 
 #: src/pages/model-settings/space-bots-model.tsx
 msgid "Bot models"
@@ -1027,6 +1054,10 @@ msgstr ""
 #: src/components/call/VoiceChatCard.tsx
 msgid "Call back"
 msgstr ""
+
+#: src/pages/Overview.tsx
+msgid "Call ended"
+msgstr "通话结束"
 
 #. placeholder {0}: call.botName
 #: src/components/call/CallCard.tsx
@@ -1099,6 +1130,7 @@ msgstr "已取消"
 
 #: src/components/AskCard.tsx
 #: src/pages/ActivityList.tsx
+#: src/pages/Overview.tsx
 msgid "Cancelled"
 msgstr "已取消"
 
@@ -1143,6 +1175,7 @@ msgid "ChatGPT subscription"
 msgstr ""
 
 #: src/lib/identity-display.ts
+#: src/pages/Overview.tsx
 msgid "Chats"
 msgstr "聊天"
 
@@ -1167,6 +1200,10 @@ msgstr "检查更新"
 #: src/pages/shell/use-routine-editor.ts
 msgid "Check in."
 msgstr "报到。"
+
+#: src/pages/Overview.tsx
+msgid "Check that the main group still exists. No other group's data is shown."
+msgstr "请确认主群仍存在；页面不会展示其他群的数据。"
 
 #: src/lib/model-connection-preflight.ts
 msgid "Check the API key or sign-in, then test again."
@@ -1339,6 +1376,10 @@ msgstr "关闭语音设置"
 msgid "Cloud"
 msgstr "云端"
 
+#: src/pages/Overview.tsx
+msgid "Cloud agent"
+msgstr "云 Agent"
+
 #: src/components/AskCard.tsx
 #: src/components/ConfirmIdentityDialog.tsx
 msgid "Code"
@@ -1401,9 +1442,11 @@ msgid "Complete"
 msgstr "完成"
 
 #: src/components/SubagentCard.tsx
+#: src/pages/Overview.tsx
 msgid "Completed"
 msgstr "已完成"
 
+#: src/pages/Overview.tsx
 #: src/pages/SettingsOverlay.tsx
 #: src/pages/shell/bot-panel.tsx
 #: src/pages/shell/message-view.tsx
@@ -1875,6 +1918,10 @@ msgstr "无法加载登录选项"
 msgid "Could not load skill"
 msgstr "无法加载技能"
 
+#: src/pages/Overview.tsx
+msgid "Could not load the overview"
+msgstr "总览加载失败"
+
 #: src/pages/Artifacts.tsx
 msgid "Could not load this artifact."
 msgstr ""
@@ -1886,6 +1933,10 @@ msgstr "无法加载此对话。"
 #: src/components/ArtifactFileCard.tsx
 msgid "Could not load this file."
 msgstr "无法加载此文件。"
+
+#: src/pages/Overview.tsx
+msgid "Could not load this workspace"
+msgstr "无法加载工作区"
 
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Could not load voice settings"
@@ -1918,6 +1969,10 @@ msgstr "无法连接到模型服务器。"
 #: src/pages/Auth.tsx
 msgid "Could not reach the server"
 msgstr "无法连接服务器"
+
+#: src/pages/Overview.tsx
+msgid "Could not read"
+msgstr "读取失败"
 
 #: src/pages/shell/agent-import.tsx
 msgid "Could not read these files"
@@ -2148,6 +2203,7 @@ msgid "Create your Rakazo"
 msgstr "创建你的 Rakazo"
 
 #: src/components/AskCard.tsx
+#: src/pages/Overview.tsx
 msgid "Created"
 msgstr "已创建"
 
@@ -2232,6 +2288,10 @@ msgstr "天"
 #: src/pages/MessagingSettingsPanel.tsx
 msgid "Decline"
 msgstr "拒绝"
+
+#: src/pages/Overview.tsx
+msgid "Dedicated computer"
+msgstr "专用电脑"
 
 #: src/pages/model-settings/compatible-model-fields.tsx
 #: src/pages/model-settings/role-model-picker.tsx
@@ -2330,6 +2390,10 @@ msgstr "正在删除…"
 #: src/components/AccountAccess.tsx
 msgid "Deletion code"
 msgstr "删除验证码"
+
+#: src/pages/Overview.tsx
+msgid "Demo main group not found"
+msgstr "未找到演示主组"
 
 #: src/components/AskCard.tsx
 msgid "Denied"
@@ -2490,6 +2554,10 @@ msgstr "拖放或粘贴图片"
 msgid "Duplicate"
 msgstr "复制"
 
+#: src/pages/Overview.tsx
+msgid "Duration"
+msgstr "耗时"
+
 #: src/pages/McpServersOverlay.tsx
 msgid "Each name can be used once."
 msgstr "每个名称只能使用一次。"
@@ -2589,9 +2657,10 @@ msgid "Environment variables: {names}"
 msgstr "环境变量：{names}"
 
 #: src/lib/roster-status.ts
+#: src/pages/Overview.tsx
 #: src/pages/shell/sidebar-roster.tsx
 msgid "Error"
-msgstr ""
+msgstr "错误"
 
 #: src/components/McpServerHealthLine.tsx
 msgid "Error details"
@@ -2706,6 +2775,7 @@ msgstr "失败"
 
 #: src/components/SubagentCard.tsx
 #: src/pages/ActivityList.tsx
+#: src/pages/Overview.tsx
 msgid "Failed"
 msgstr "失败"
 
@@ -2789,6 +2859,10 @@ msgstr "已完成。"
 #: src/pages/McpOAuthCallback.tsx
 msgid "Finishing MCP connection…"
 msgstr "正在完成 MCP 连接…"
+
+#: src/pages/Overview.tsx
+msgid "Follow-up"
+msgstr "跟进"
 
 #: src/pages/Auth.tsx
 msgid "Forgot password?"
@@ -3183,6 +3257,14 @@ msgstr "上次检查 {0}：无变化"
 msgid "Later"
 msgstr ""
 
+#: src/pages/Overview.tsx
+msgid "Latest activity"
+msgstr "最近活动"
+
+#: src/pages/Overview.tsx
+msgid "Leased"
+msgstr "已领取"
+
 #: src/pages/MessagingSettingsPanel.tsx
 msgid "Leave"
 msgstr "退出"
@@ -3248,6 +3330,10 @@ msgstr "自动加载网络图片"
 msgid "Loading activity…"
 msgstr "正在加载动态…"
 
+#: src/pages/Overview.tsx
+msgid "Loading approvals"
+msgstr "加载待审批"
+
 #: src/pages/PluginsOverlay.tsx
 msgid "Loading integrations…"
 msgstr "正在加载集成…"
@@ -3265,6 +3351,10 @@ msgstr "正在加载模型目录…"
 msgid "Loading preview…"
 msgstr "正在加载预览…"
 
+#: src/pages/Overview.tsx
+msgid "Loading runs"
+msgstr "加载运行"
+
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Loading voice providers…"
 msgstr "正在加载语音提供方…"
@@ -3272,6 +3362,7 @@ msgstr "正在加载语音提供方…"
 #: src/components/PageLoading.tsx
 #: src/pages/Artifacts.tsx
 #: src/pages/IntegrationSetup.tsx
+#: src/pages/Overview.tsx
 #: src/pages/PeerMessagesOverlay.tsx
 #: src/pages/RoutineRunHistory.tsx
 #: src/pages/shell/transcript.tsx
@@ -3453,6 +3544,7 @@ msgstr "提到了 OpenClaw 功能"
 msgid "Mentions: {mentions}"
 msgstr "提到：{mentions}"
 
+#: src/pages/Overview.tsx
 #: src/pages/shell/chat-shared.ts
 #: src/pages/shell/composer.tsx
 msgid "Message"
@@ -3542,6 +3634,7 @@ msgstr "模式"
 #: src/pages/model-settings/compatible-model-fields.tsx
 #: src/pages/model-settings/model-picker.tsx
 #: src/pages/Onboarding.tsx
+#: src/pages/Overview.tsx
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/agent-import.tsx
 #: src/pages/shell/bot-panel.tsx
@@ -3555,6 +3648,10 @@ msgstr "模型“{modelId}”未列出。"
 #: src/pages/shell/bot-panel.tsx
 msgid "Model connections"
 msgstr "模型连接"
+
+#: src/pages/Overview.tsx
+msgid "Model cost"
+msgstr "模型成本"
 
 #: src/pages/model-settings/compatible-model-fields.tsx
 #: src/pages/Onboarding.tsx
@@ -3673,6 +3770,10 @@ msgstr ""
 #: src/lib/roster-status.ts
 msgid "Needs an answer"
 msgstr ""
+
+#: src/pages/Overview.tsx
+msgid "Needs attention"
+msgstr "需要处理"
 
 #: src/pages/ActivityList.tsx
 msgid "Needs input"
@@ -3827,6 +3928,10 @@ msgstr "未列出模型。"
 msgid "No OpenClaw, Hermes or agent document found."
 msgstr "未找到 OpenClaw、Hermes 或 Agent 文档。"
 
+#: src/pages/Overview.tsx
+msgid "No recent runs"
+msgstr "暂无最近运行"
+
 #: src/components/integrations/IntegrationSetup.tsx
 msgid "No remote MCP servers found"
 msgstr ""
@@ -3836,6 +3941,10 @@ msgstr ""
 #: src/pages/SpaceSearch.tsx
 msgid "No results"
 msgstr "无结果"
+
+#: src/pages/Overview.tsx
+msgid "No routines"
+msgstr "暂无例行任务"
 
 #: src/components/markdown-copy.tsx
 msgid "No rows"
@@ -3853,6 +3962,10 @@ msgstr "还没有运行记录"
 msgid "No skills yet"
 msgstr "暂无技能"
 
+#: src/pages/Overview.tsx
+msgid "No team bots found"
+msgstr "没有找到团队 Bot"
+
 #: src/pages/Board.tsx
 msgid "No tickets yet"
 msgstr ""
@@ -3860,6 +3973,10 @@ msgstr ""
 #: src/pages/RoutineEditor.tsx
 msgid "No trigger"
 msgstr "无触发器"
+
+#: src/pages/Overview.tsx
+msgid "None"
+msgstr "无"
 
 #: src/lib/ticket-priority.ts
 msgid "Normal"
@@ -3889,6 +4006,14 @@ msgstr "不在插件目录中"
 msgid "Not now"
 msgstr "暂不"
 
+#: src/pages/Overview.tsx
+msgid "Not provided"
+msgstr "未提供"
+
+#: src/pages/Overview.tsx
+msgid "Not scheduled"
+msgstr "未安排"
+
 #: src/pages/shell/agent-import.tsx
 #: src/pages/shell/import-status.ts
 msgid "Not supported in Rakazo"
@@ -3901,6 +4026,10 @@ msgstr "Rakazo 不使用"
 #: src/components/McpServerHealthLine.tsx
 msgid "Not working"
 msgstr "无法正常工作"
+
+#: src/pages/Overview.tsx
+msgid "Nothing pending"
+msgstr "没有待处理"
 
 #: src/pages/KnowledgeSection.tsx
 msgid "Nothing remembered yet"
@@ -4001,6 +4130,10 @@ msgstr ""
 msgid "Open call"
 msgstr ""
 
+#: src/pages/Overview.tsx
+msgid "Open chat"
+msgstr "打开聊天"
+
 #. placeholder {0}: call.botName
 #: src/components/call/CallCard.tsx
 msgid "Open chat with {0}"
@@ -4071,6 +4204,11 @@ msgstr "其他模型…"
 #: src/pages/AccountSettingsOverlay.tsx
 msgid "Output"
 msgstr "输出"
+
+#: src/components/SidebarFooter.tsx
+#: src/pages/Overview.tsx
+msgid "Overview"
+msgstr "总览"
 
 #: src/lib/identity-display.ts
 #: src/pages/Board.tsx
@@ -4148,6 +4286,7 @@ msgstr "粘贴你的 API 密钥"
 msgid "Paste your API key, then test again."
 msgstr "请粘贴你的 API 密钥，然后重新测试。"
 
+#: src/pages/Overview.tsx
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/import-status.ts
 msgid "Paused"
@@ -4278,6 +4417,7 @@ msgid "Pull request"
 msgstr "拉取请求"
 
 #: src/pages/ActivityList.tsx
+#: src/pages/Overview.tsx
 msgid "Queued"
 msgstr "排队中"
 
@@ -4292,6 +4432,10 @@ msgstr ""
 
 #: src/pages/shell/message-hover-actions.tsx
 msgid "React"
+msgstr "回应"
+
+#: src/pages/Overview.tsx
+msgid "Reaction"
 msgstr "回应"
 
 #: src/pages/shell/message-hover-actions.tsx
@@ -4322,6 +4466,10 @@ msgstr ""
 #: src/pages/ActivityList.tsx
 msgid "Recent"
 msgstr "最近"
+
+#: src/pages/Overview.tsx
+msgid "Recent runs"
+msgstr "最近运行"
 
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Reconnect"
@@ -4399,6 +4547,7 @@ msgstr "重定向 URI"
 #: src/App.tsx
 #: src/components/ErrorBoundary.tsx
 #: src/components/ModelCredits.tsx
+#: src/pages/Overview.tsx
 msgid "Refresh"
 msgstr "刷新"
 
@@ -4620,6 +4769,10 @@ msgstr "已恢复"
 msgid "Restoring your workspace"
 msgstr ""
 
+#: src/pages/Overview.tsx
+msgid "Resume"
+msgstr "恢复"
+
 #: src/components/AccountAccess.tsx
 #: src/components/PasskeySettings.tsx
 #: src/pages/Auth.tsx
@@ -4664,11 +4817,13 @@ msgid "Rotate key"
 msgstr "轮换密钥"
 
 #: src/lib/identity-display.ts
+#: src/pages/Overview.tsx
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/use-routine-editor.ts
 msgid "Routine"
 msgstr "例行任务"
 
+#: src/pages/Overview.tsx
 #: src/pages/RoutineEditor.tsx
 #: src/pages/shell/agent-import.tsx
 msgid "Routines"
@@ -4686,6 +4841,10 @@ msgstr "行"
 msgid "Run at"
 msgstr "运行时间"
 
+#: src/pages/Overview.tsx
+msgid "Run data unavailable"
+msgstr "运行数据暂不可用"
+
 #: src/pages/RoutineRunHistory.tsx
 msgid "Run history"
 msgstr "运行记录"
@@ -4701,6 +4860,7 @@ msgstr "运行中"
 #: src/components/McpServerHealthLine.tsx
 #: src/components/SubagentCard.tsx
 #: src/pages/ActivityList.tsx
+#: src/pages/Overview.tsx
 #: src/pages/RoutineEditor.tsx
 msgid "Running"
 msgstr "运行中"
@@ -5074,6 +5234,10 @@ msgstr "注册"
 msgid "Site"
 msgstr ""
 
+#: src/pages/Overview.tsx
+msgid "Skill"
+msgstr "技能"
+
 #. placeholder {0}: skill.name
 #: src/pages/shell/composer.tsx
 msgid "Skill {0}"
@@ -5112,6 +5276,10 @@ msgstr "Slack 消息"
 #: src/pages/RoutineEditor.tsx
 msgid "Slack not enabled"
 msgstr ""
+
+#: src/pages/Overview.tsx
+msgid "Sleeping"
+msgstr "已休眠"
 
 #: src/components/composer/HoldToTalk.tsx
 msgid "Slide up to lock"
@@ -5155,6 +5323,7 @@ msgstr "按 {column} 排序，降序"
 msgid "Space"
 msgstr "工作区"
 
+#: src/pages/Overview.tsx
 #: src/pages/shell/bot-panel.tsx
 msgid "Space default"
 msgstr "工作区默认"
@@ -5162,6 +5331,10 @@ msgstr "工作区默认"
 #: src/pages/SettingsOverlay.tsx
 msgid "Spaces"
 msgstr "工作区"
+
+#: src/pages/Overview.tsx
+msgid "Spawn"
+msgstr "派生"
 
 #: src/pages/shell/message-view.tsx
 msgid "Speak"
@@ -5201,6 +5374,7 @@ msgid "Start recording"
 msgstr "开始录制"
 
 #: src/pages/ActivityList.tsx
+#: src/pages/Overview.tsx
 msgid "Starting"
 msgstr "正在开始"
 
@@ -5213,8 +5387,9 @@ msgstr "正在开始…"
 
 #: src/pages/ActivityList.tsx
 #: src/pages/Board.tsx
+#: src/pages/Overview.tsx
 msgid "Status"
-msgstr ""
+msgstr "状态"
 
 #: src/components/teach/SkillDraftCard.tsx
 msgid "Steps"
@@ -5238,6 +5413,10 @@ msgstr "停止朗读"
 #: src/components/teach/TeachRecordingChrome.tsx
 msgid "Stop teaching"
 msgstr "停止示范"
+
+#: src/pages/Overview.tsx
+msgid "Stopped"
+msgstr "已停止"
 
 #. js-lingui-explicit-id
 #: src/lib/browser-notifications.ts
@@ -5337,9 +5516,17 @@ msgstr "正在示范，发送新消息前请先停止示范。"
 msgid "Team"
 msgstr "团队"
 
+#: src/pages/Overview.tsx
+msgid "Team computer"
+msgstr "团队电脑"
+
 #: src/pages/shell/computer-view.tsx
 msgid "Team Computer"
 msgstr "团队电脑"
+
+#: src/pages/Overview.tsx
+msgid "Team status"
+msgstr "团队状态"
 
 #: src/pages/RoutineEditor.tsx
 msgid "Teams message"
@@ -5576,6 +5763,10 @@ msgstr ""
 msgid "Thursday"
 msgstr "周四"
 
+#: src/pages/Overview.tsx
+msgid "Ticket"
+msgstr "工单"
+
 #: src/pages/RoutineSchedule.tsx
 msgid "Time of day"
 msgstr "时间"
@@ -5672,8 +5863,13 @@ msgstr ""
 msgid "Trial ends {day}"
 msgstr ""
 
+#: src/pages/Overview.tsx
+msgid "Trigger"
+msgstr "触发"
+
 #: src/pages/ActivityList.tsx
 #: src/pages/Onboarding.tsx
+#: src/pages/Overview.tsx
 msgid "Try again"
 msgstr "重试"
 
@@ -5717,6 +5913,10 @@ msgstr "撤销导入？"
 #: src/pages/PluginsOverlay.tsx
 msgid "Uninstall"
 msgstr ""
+
+#: src/pages/Overview.tsx
+msgid "Unknown"
+msgstr "未知"
 
 #: src/pages/MessagingSettingsPanel.tsx
 msgid "Unlink"
@@ -5767,6 +5967,10 @@ msgstr "更新指令？"
 msgid "Update progress"
 msgstr ""
 
+#: src/pages/Overview.tsx
+msgid "Updated"
+msgstr "更新"
+
 #: src/components/VaultSettings.tsx
 msgid "Updated {updated}"
 msgstr ""
@@ -5808,6 +6012,10 @@ msgstr ""
 #: src/pages/SettingsOverlay.tsx
 msgid "Usage"
 msgstr "用量"
+
+#: src/pages/Overview.tsx
+msgid "Usage data unavailable"
+msgstr "用量数据暂不可用"
 
 #. Switches the saved timezone to this device's, e.g. 'Use Pacific/Auckland'
 #. placeholder {0}: deviceTimezone.replaceAll("_", " ")
@@ -5863,6 +6071,10 @@ msgstr ""
 #: src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "Use up to 512 letters, digits, _ or -."
 msgstr ""
+
+#: src/pages/Overview.tsx
+msgid "User"
+msgstr "用户"
 
 #: src/pages/memory-providers/HonchoSettingsForm.tsx
 msgid "User peer"
@@ -5926,6 +6138,14 @@ msgstr "语音"
 msgid "Wait a moment and test again."
 msgstr "请稍候并重新测试。"
 
+#: src/pages/Overview.tsx
+msgid "Waiting for review"
+msgstr "等待处理"
+
+#: src/pages/Overview.tsx
+msgid "Waiting for takeover"
+msgstr "待接管"
+
 #: src/lib/roster-status.ts
 msgid "Waiting in line…"
 msgstr "排队等候…"
@@ -5942,6 +6162,7 @@ msgstr ""
 msgid "Web, desktop and mobile apps"
 msgstr ""
 
+#: src/pages/Overview.tsx
 #: src/pages/RoutineEditor.tsx
 msgid "Webhook"
 msgstr "Webhook"

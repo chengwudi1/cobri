@@ -340,6 +340,11 @@ function ShellSidebarFooter({
           closeMobileSidebar();
           navigate(`/app/x/${link.id}`);
         }}
+        onOverview={() => {
+          setMenuOpen(false);
+          closeMobileSidebar();
+          navigate("/app/overview");
+        }}
         onArtifacts={() => {
           setMenuOpen(false);
           closeMobileSidebar();

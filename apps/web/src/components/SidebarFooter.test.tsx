@@ -34,6 +34,7 @@ async function render(
   onIntegrations = vi.fn(),
   onBoard?: () => void,
   logos?: Array<{ name: string; logo?: string }>,
+  onOverview?: () => void,
 ) {
   const email = "account@rakazo.test";
   await act(async () =>
@@ -54,6 +55,7 @@ async function render(
           onOpenChange={() => {}}
           onIntegrations={onIntegrations}
           onBoard={onBoard}
+          onOverview={onOverview}
           onArtifacts={() => {}}
           onSettings={() => {}}
           onUsage={() => {}}
@@ -157,6 +159,17 @@ it("omits Board when unavailable", async () => {
   expect(document.querySelector('[data-slot="popover-content"]')?.textContent).not.toContain(
     "Board",
   );
+});
+
+it("opens overview from the account menu", async () => {
+  const onOverview = vi.fn();
+  await render("Demo User", undefined, vi.fn(), undefined, undefined, onOverview);
+  const overview = [...document.querySelectorAll("button")].find(
+    (button) => button.textContent === "Overview",
+  )!;
+  expect(overview).toBeTruthy();
+  await act(async () => overview.click());
+  expect(onOverview).toHaveBeenCalledOnce();
 });
 
 it("offers the existing Android download on Android", async () => {

@@ -14,6 +14,7 @@ import {
   Download,
   FolderOpen,
   Gauge,
+  LayoutDashboard,
   Link2,
   LogOut,
   Plug,
@@ -40,6 +41,7 @@ type Props = {
   links?: NavLink[];
   onLink?: (link: NavLink) => void;
   onArtifacts: () => void;
+  onOverview?: () => void;
   onSettings: () => void;
   onUsage: () => void;
   onLogOut: () => void;
@@ -66,6 +68,7 @@ export function SidebarFooter({
   links = [],
   onLink,
   onArtifacts,
+  onOverview,
   onSettings,
   onUsage,
   onLogOut,
@@ -146,6 +149,16 @@ export function SidebarFooter({
               >
                 <Plug className="text-muted-foreground" strokeWidth={1.75} />
                 <Trans>Connect apps</Trans>
+              </Button>
+            ) : null}
+            {onOverview ? (
+              <Button
+                variant="ghost"
+                className="h-9 w-full justify-start gap-2.5 font-normal"
+                onClick={onOverview}
+              >
+                <LayoutDashboard className="text-muted-foreground" strokeWidth={1.75} />
+                <Trans>Overview</Trans>
               </Button>
             ) : null}
             <Button
