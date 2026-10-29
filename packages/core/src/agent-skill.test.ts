@@ -5,11 +5,72 @@ import {
   extractForcedSkillName,
   extractRoutineSkillMentions,
   findSkillByName,
+  formatSharedSkillContent,
   formatSkillsCatalogInstruction,
   mergeBuiltinSkills,
   parseSkillMd,
   renameRoutineSkillMentions,
 } from "./agent-skill.js";
+
+describe("shared skill promotion", () => {
+  it("removes recorded account, customer, path, domain, and coordinate details", () => {
+    const content = formatSharedSkillContent({
+      name: "客户会准备",
+      goal: "准备远山科技的客户会",
+      playbook: {
+        whenToUse: "客户会前用 inbox@demo.test 打开收件箱，账号: demo-user",
+        inputs: [
+          "inbox@demo.test",
+          "账号: demo-user",
+          "reports/2026-11-05-meeting.md",
+          "reports/My Meeting/notes file.md",
+          "reports/meeting-notes",
+          "api.test",
+          "host.example",
+          "\\\\fileserver\\share\\team\\notes with spaces.md",
+          "example.com",
+          "ftp://files.example.com/share",
+        ],
+        steps: [
+          "Open 收件箱",
+          "Click at (100, 200) to open the invite",
+          "Send 远山科技 / 李总 the agenda",
+          "Save to C:\\Users\\pm\\reports\\meeting.md",
+        ],
+        howToCheck: "Agenda contains the meeting time",
+        whatToReturn: "A one-page agenda",
+        approvalBoundaries: "Do not send email without approval",
+        failureHandling: "Ask the user",
+      },
+    });
+    const parsed = parseSkillMd(content);
+    expect("error" in parsed).toBe(false);
+    if ("error" in parsed) return;
+    const body = parsed.body;
+    for (const secret of [
+      "inbox@demo.test",
+      "收件箱",
+      "demo-user",
+      "远山科技",
+      "李总",
+      "reports/2026-11-05-meeting.md",
+      "reports/My Meeting/notes file.md",
+      "reports/meeting-notes",
+      "api.test",
+      "host.example",
+      "\\\\fileserver",
+      "C:\\Users",
+      "example.com",
+      "ftp://",
+      "(100, 200)",
+    ]) {
+      expect(body).not.toContain(secret);
+    }
+    expect(body).toContain("Click at [coords] to open the invite");
+    expect(body).toContain("Agenda contains the meeting time");
+    expect(body).toContain("Approval boundaries");
+  });
+});
 
 describe("built-in skill merging", () => {
   it("uses the same normalized names for catalog precedence and prompt expansion", () => {

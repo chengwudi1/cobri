@@ -175,6 +175,30 @@ export function createAgentSkillsService(prisma: PrismaClient) {
       return builtin;
     },
 
+    async createOrGet(
+      actor: Actor,
+      input: { content?: string; name?: string; description?: string; body?: string },
+    ): Promise<AgentSkill> {
+      const resolved = resolveSkillContent(input);
+      const existing = (await this.list(actor)).find(
+        (skill) =>
+          skill.source === "user" && skill.name.toLowerCase() === resolved.name.toLowerCase(),
+      );
+      if (existing) return this.get(actor, { skillId: existing.id });
+      try {
+        return await this.create(actor, input);
+      } catch (error) {
+        if (error instanceof ORPCError && error.code === "CONFLICT") {
+          const raced = (await this.list(actor)).find(
+            (skill) =>
+              skill.source === "user" && skill.name.toLowerCase() === resolved.name.toLowerCase(),
+          );
+          if (raced) return this.get(actor, { skillId: raced.id });
+        }
+        throw error;
+      }
+    },
+
     async create(
       actor: Actor,
       input: { content?: string; name?: string; description?: string; body?: string },

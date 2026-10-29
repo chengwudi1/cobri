@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 import { MEMORY_REVISION_CONFLICT_ERROR } from "@rakazo/adapter-kit";
 import { isScratchpadStatus, listScratchpadItems, mapScratchpadItem } from "@rakazo/adapters";
 import { isDeletableMemoryDocument } from "@rakazo/contracts";
+import { formatSharedSkillContent } from "@rakazo/core";
 import { findSpaceMemoryConfig, IsolationError } from "@rakazo/db";
 import {
   disconnectMemoryProvider,
@@ -223,6 +224,19 @@ export function memoryRoutes(ctx: RouterContext) {
       save: authed.skills.save.handler(async ({ context, input }) =>
         taughtSkills.save(context.actor, input.skillId, input.name),
       ),
+      saveShared: authed.skills.saveShared.handler(async ({ context, input }) => {
+        const skill = await taughtSkills.get(context.actor, input.skillId);
+        if (skill.status !== "saved") {
+          throw new ORPCError("BAD_REQUEST", { message: "Save the taught skill first." });
+        }
+        return agentSkills.createOrGet(context.actor, {
+          content: formatSharedSkillContent({
+            name: skill.name || skill.goal,
+            goal: skill.goal,
+            playbook: skill.playbook,
+          }),
+        });
+      }),
       testRun: authed.skills.testRun.handler(async ({ context, input }) =>
         taughtSkills.testRun(context.actor, input.skillId, input.prompt),
       ),

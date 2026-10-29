@@ -2,6 +2,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type { SkillPlaybook } from "@rakazo/contracts";
 import { formatSkillRunPrompt } from "@rakazo/core";
 import { Button, Input, Label, Textarea } from "@rakazo/ui-web";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState } from "react";
 import { rpc } from "../../lib/rpc";
 import { errorText } from "../../lib/user-error";
@@ -42,6 +43,7 @@ export function SkillDraftCard({
   onAddRoutine: (name: string, prompt: string) => void;
 }) {
   const { t } = useLingui();
+  const queryClient = useQueryClient();
   const id = useId();
   const [name, setName] = useState(block.name);
   const [playbook, setPlaybook] = useState(block.playbook);
@@ -49,6 +51,7 @@ export function SkillDraftCard({
   const [savedFields, setSavedFields] = useState(savedSnapshot(block));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sharedName, setSharedName] = useState<string | null>(null);
   const saved = savedFields === JSON.stringify({ name, playbook });
 
   // The fields last loaded from the server, and whether this card has written since. A later
@@ -94,6 +97,20 @@ export function SkillDraftCard({
       await rpc.skills.save({ skillId: block.skillId, name });
       setSavedFields(sent);
     }, t`Could not save skill`);
+
+  const shareDraft = () =>
+    persist(async (sent) => {
+      await rpc.skills.save({ skillId: block.skillId, name });
+      const shared = await rpc.skills.saveShared({ skillId: block.skillId });
+      setSavedFields(sent);
+      setSharedName(shared.name);
+      await queryClient.invalidateQueries({
+        predicate: (query) => {
+          const [path] = query.queryKey;
+          return Array.isArray(path) && path.includes("agentSkills");
+        },
+      });
+    }, t`Could not save shared skill`);
 
   const testDraft = () => persist(() => rpc.skills.testRun({ skillId: block.skillId }));
 
@@ -182,6 +199,9 @@ export function SkillDraftCard({
         <Button disabled={busy} onClick={() => void saveDraft()}>
           {saved ? <Trans>Saved</Trans> : busy ? <Trans>Saving…</Trans> : <Trans>Save</Trans>}
         </Button>
+        <Button variant="outline" disabled={busy} onClick={() => void shareDraft()}>
+          <Trans>Save as shared skill</Trans>
+        </Button>
         <Button variant="outline" disabled={busy} onClick={() => void testDraft()}>
           <Trans>Test</Trans>
         </Button>
@@ -194,6 +214,11 @@ export function SkillDraftCard({
         </Button>
       </div>
       {error ? <p className="mt-2 text-xs text-destructive">{error}</p> : null}
+      {sharedName ? (
+        <p className="mt-2 text-xs text-muted-foreground" data-testid="skill-shared">
+          {t`Shared as ${sharedName}`}
+        </p>
+      ) : null}
     </BuiCard>
   );
 }

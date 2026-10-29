@@ -249,9 +249,9 @@ export const taskTools: ToolHandlers = {
     return call.finish(cancelled);
   },
   async skill_read(ctx, call) {
-    const { deps, run } = ctx;
+    const { deps, run, bot, thread } = ctx;
     const { args } = call;
-    return skillReadFromTool(
+    const result = await skillReadFromTool(
       deps.prisma,
       {
         spaceId: run.spaceId,
@@ -262,6 +262,19 @@ export const taskTools: ToolHandlers = {
         skillId: args.skillId ? String(args.skillId) : undefined,
       },
     );
+    if (!("error" in result)) {
+      await deps.events
+        .append({
+          spaceId: run.spaceId,
+          threadId: thread.id,
+          botId: bot.id,
+          runId: run.id,
+          type: "skill.invoked",
+          payload: { skillId: String(result.id), name: String(result.name) },
+        })
+        .catch(() => undefined);
+    }
+    return result;
   },
   async skill_create(ctx, call) {
     const { deps, run } = ctx;

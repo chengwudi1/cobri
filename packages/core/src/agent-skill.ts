@@ -1,3 +1,5 @@
+import type { SkillPlaybook } from "./teach-playbook.js";
+
 /**
  * Claude Agent Skills: reusable SKILL.md recipes shared across assistants.
  * The Pi runtime already understands this format; we persist and inject them.
@@ -124,6 +126,65 @@ export function buildSkillMd(input: {
 
 export function skillCatalogLine(entry: Pick<SkillCatalogEntry, "name" | "description">): string {
   return `- ${entry.name}: ${entry.description}`;
+}
+
+/** Replace values that belong to the recorded demo, not to the reusable recipe. */
+function portableSkillText(value: string): string {
+  return value
+    .replace(/[\w.+-]+@[\w.-]+\.\w+/g, "[email]")
+    .replace(/\b(?:https?|ftp):\/\/[^\s，,。;；)]+/gi, "[link]")
+    .replace(
+      /\b(?:[a-z0-9-]+\.)+(?:com|cn|net|org|io|dev|ai|co|edu|gov|test|example|local)(?:\/[^\s，,。;；)]*)?/gi,
+      "[link]",
+    )
+    .replace(/\\\\[^\r\n，,。;；]+/g, "[path]")
+    .replace(/[A-Za-z]:\\(?:[^\\\r\n]+\\)*[^\\\r\n，,。;；]+/g, "[path]")
+    .replace(/\/(?:[\w.-]+\/)+[\w.-]+/g, "[path]")
+    .replace(/\b(?:[\w .-]+\/)+[\w .-]+\.[A-Za-z0-9]{1,8}\b/g, "[path]")
+    .replace(/\b(?:[\w .-]+\/)+[\w .-]+/g, "[path]")
+    .replace(/(?:收件箱|发件箱|邮箱|inbox)/gi, "[inbox]")
+    .replace(/(?:账号|帐号|account)(?:\s*[:：=]\s*[^\s，,。;；]+)?/gi, "[account]")
+    .replace(/[\u4e00-\u9fa5A-Za-z0-9（）()·]{2,30}(?:公司|集团|科技|有限|股份)/g, "[company]")
+    .replace(/[\u4e00-\u9fa5]{1,3}(?:总|先生|女士|经理|总监)/g, "[person]")
+    .replace(/\(\s*\d+\s*,\s*\d+\s*\)/g, "[coords]")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Turn a recorded/taught playbook into a portable SKILL.md for the shared AgentSkill store. */
+export function formatSharedSkillContent(input: {
+  name: string;
+  goal: string;
+  playbook: SkillPlaybook;
+}): string {
+  const playbook = input.playbook;
+  const name = (portableSkillText(input.name || input.goal) || "Shared skill").slice(0, 80);
+  const description = (
+    portableSkillText(playbook.whenToUse || input.goal) || "Reusable skill"
+  ).slice(0, 2000);
+  const steps = playbook.steps.map(portableSkillText).filter(Boolean);
+  const body = [
+    "## When to use",
+    description,
+    "## Inputs",
+    playbook.inputs.map((item) => `- ${portableSkillText(item)}`).join("\n") || "- None",
+    "## Steps",
+    steps.map((step, index) => `${index + 1}. ${step}`).join("\n") ||
+      "1. Follow the current request.",
+    ...(playbook.howToCheck ? ["## How to check", portableSkillText(playbook.howToCheck)] : []),
+    ...(playbook.whatToReturn
+      ? ["## What to return", portableSkillText(playbook.whatToReturn)]
+      : []),
+    ...(playbook.approvalBoundaries
+      ? ["## Approval boundaries", portableSkillText(playbook.approvalBoundaries)]
+      : []),
+    ...(playbook.failureHandling
+      ? ["## Failure handling", portableSkillText(playbook.failureHandling)]
+      : []),
+    "## Portability",
+    "Replace [email], [inbox], [account], and [link] placeholders with values from the current request. Do not reuse recorded account details.",
+  ].join("\n\n");
+  return buildSkillMd({ name, description, body });
 }
 
 export function formatSkillsCatalogInstruction(entries: SkillCatalogEntry[]): string | undefined {

@@ -810,6 +810,8 @@ export const appContract = {
     save: oc
       .input(z.object({ skillId: Id, name: z.string().optional() }))
       .output(TaughtSkillSchema),
+    /** Promote a saved taught skill into the Space's shared AgentSkill store. */
+    saveShared: oc.input(z.object({ skillId: Id })).output(AgentSkillSchema),
     testRun: oc
       .input(z.object({ skillId: Id, prompt: z.string().optional() }))
       .output(z.object({ runId: Id })),

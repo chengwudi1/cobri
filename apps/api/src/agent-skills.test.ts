@@ -1,3 +1,4 @@
+import { ORPCError } from "@orpc/server";
 import type { Actor } from "@rakazo/contracts";
 import { buildSkillMd, parseSkillMd } from "@rakazo/core";
 import type { PrismaClient } from "@rakazo/db";
@@ -47,6 +48,16 @@ function setup(rows: ReturnType<typeof savedSkill>[] = []) {
       if (index < 0) return { count: 0 };
       rows.splice(index, 1);
       return { count: 1 };
+    }),
+    create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
+      const row = {
+        id: `saved-${rows.length + 1}`,
+        createdAt: new Date(0),
+        updatedAt: new Date(0),
+        ...data,
+      } as ReturnType<typeof savedSkill>;
+      rows.push(row);
+      return row;
     }),
   };
   return {
@@ -111,6 +122,30 @@ describe("built-in skill precedence in the API", () => {
       await expect(service.get(actor, { skillId: "saved-1" })).rejects.toThrow();
     },
   );
+});
+
+it("returns the existing shared skill when the same content is promoted twice", async () => {
+  const { service, agentSkill } = setup();
+  const content = buildSkillMd({
+    name: "客户会准备",
+    description: "Prepare a customer meeting",
+    body: "1. Read the invite.",
+  });
+  const first = await service.createOrGet(actor, { content });
+  const second = await service.createOrGet(actor, { content });
+  expect(second.id).toBe(first.id);
+  expect(agentSkill.create).toHaveBeenCalledTimes(1);
+});
+
+it("returns the existing record when a concurrent create hits the unique conflict", async () => {
+  const row = savedSkill("客户会准备");
+  const { service, agentSkill } = setup([row]);
+  agentSkill.findMany.mockResolvedValueOnce([]);
+  agentSkill.create.mockRejectedValueOnce(
+    new ORPCError("CONFLICT", { message: "A skill with that name already exists." }),
+  );
+  const result = await service.createOrGet(actor, { content: row.content });
+  expect(result.id).toBe(row.id);
 });
 
 describe("imported skill content in the API", () => {

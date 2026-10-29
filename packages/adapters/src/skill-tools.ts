@@ -113,6 +113,7 @@ export async function skillReadFromTool(
   const skill = await findOwnedSkill(prisma, owner, input);
   if (!skill) return { error: "Skill not found." };
   return {
+    id: skill.id,
     name: skill.name,
     description: skill.description,
     source: skill.source,
