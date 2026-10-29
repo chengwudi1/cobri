@@ -36,6 +36,52 @@ describe("buildApprovalAskBlock", () => {
     expect(block.detail?.length).toBeLessThanOrEqual(4_001);
   });
 
+  it("renders object request bodies as readable fields instead of [object Object]", () => {
+    const block = buildApprovalAskBlock(
+      "effect-1",
+      "GOOGLECALENDAR_CREATE_EVENT",
+      {
+        body: {
+          summary: "续约会议",
+          start: "2026-11-05T16:00:00+08:00",
+          end: "2026-11-05T17:00:00+08:00",
+          attendees: ["li@example.test", "wang@example.test"],
+        },
+      },
+      [],
+    );
+
+    expect(block.kind).toBe("ask");
+    if (block.kind !== "ask") throw new Error("expected ask block");
+    expect(block.detail).not.toContain("[object Object]");
+    expect(block.detail).toContain('"summary": "续约会议"');
+    expect(block.detail).toContain('"start": "2026-11-05T16:00:00+08:00"');
+    expect(block.detail).toContain('"attendees"');
+    expect(block.detail).toContain("li@example.test");
+  });
+
+  it("renders nested email bodies as readable fields instead of [object Object]", () => {
+    const block = buildApprovalAskBlock(
+      "effect-1",
+      "GMAIL_SEND_EMAIL",
+      {
+        body: {
+          to: "person@example.test",
+          subject: "Quarterly update",
+          body: "Please review the attached summary.",
+        },
+      },
+      [],
+    );
+
+    expect(block.kind).toBe("ask");
+    if (block.kind !== "ask") throw new Error("expected ask block");
+    expect(block.detail).not.toContain("[object Object]");
+    expect(block.detail).toContain('"to": "person@example.test"');
+    expect(block.detail).toContain('"subject": "Quarterly update"');
+    expect(block.detail).toContain("Please review the attached summary.");
+  });
+
   it("includes an optional review reason as the first detail line", () => {
     const block = buildApprovalAskBlock(
       "effect-1",

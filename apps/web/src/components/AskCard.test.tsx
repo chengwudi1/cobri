@@ -300,6 +300,32 @@ it("says a user's-computer approval allows the rest of the chat", async () => {
   expect(container.textContent).toContain("Allowed for this chat");
 });
 
+it("renders a multi-line object detail without object placeholders", async () => {
+  const block: AskBlock = {
+    kind: "ask",
+    text: "Review before GOOGLECALENDAR_CREATE_EVENT",
+    detail: {
+      body: {
+        summary: "续约会议",
+        start: "2026-11-05T16:00:00+08:00",
+        attendees: ["li@example.test"],
+      },
+    } as unknown as string,
+    detailFormat: "code",
+    status: "pending",
+    actions: [
+      { id: "allow", label: "Allow once" },
+      { id: "deny", label: "Deny" },
+    ],
+  };
+  await render(block);
+  const detail = container.querySelector('[data-testid="ask-detail"]');
+  expect(detail?.textContent).toContain("续约会议");
+  expect(detail?.textContent).toContain('"start": "2026-11-05T16:00:00+08:00"');
+  expect(detail?.textContent).toContain("li@example.test");
+  expect(detail?.textContent).not.toContain("[object Object]");
+});
+
 it("gives onboarding choices the same lettered rows as questions", async () => {
   await act(async () =>
     root.render(

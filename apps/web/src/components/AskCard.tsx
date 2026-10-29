@@ -19,6 +19,16 @@ import { OptionRow, optionLetter } from "./OptionRow";
 
 export type AskBlock = Extract<ThreadMessage["blocks"][number], { kind: "ask" }>;
 
+function formatDetail(detail: unknown): string {
+  if (typeof detail === "string") return detail;
+  if (detail == null) return "";
+  try {
+    return JSON.stringify(detail, null, 2);
+  } catch {
+    return String(detail);
+  }
+}
+
 function formatAnsweredState(
   answer: string | undefined,
   approval: boolean,
@@ -273,7 +283,7 @@ export function AskCard({
               : "mt-2.5 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-background px-3 py-2 font-mono text-[13px] leading-[1.6] text-foreground"
           }
         >
-          {block.detail}
+          {formatDetail(block.detail)}
         </pre>
       ) : null}
       {block.instructionUpdate && editing && canAnswer && !answered ? (

@@ -178,6 +178,19 @@ function describeApprovalAction(toolName: string, args: Record<string, unknown>)
   return target ? `${toolName} → ${target}` : toolName;
 }
 
+/** Args can carry a nested request body; keep it readable instead of `[object Object]`. */
+function formatApprovalValue(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return String(value);
+  }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
 function formatApprovalDetail(
   toolName: string,
   args: Record<string, unknown>,
@@ -196,12 +209,28 @@ function formatApprovalDetail(
   const keys =
     toolName === "web_fetch"
       ? ["url"]
-      : ["collection", "title", "to", "recipient_email", "cc", "bcc", "subject", "amount", "body"];
+      : [
+          "collection",
+          "title",
+          "summary",
+          "to",
+          "recipient_email",
+          "cc",
+          "bcc",
+          "subject",
+          "amount",
+          "start",
+          "end",
+          "timezone",
+          "attendees",
+          "body",
+          "request",
+        ];
   const pushArgs = (values: Record<string, unknown>) => {
     for (const key of keys) {
       const value = values[key];
       if (value == null || value === "") continue;
-      lines.push(`${key}: ${String(value)}`);
+      lines.push(`${key}: ${formatApprovalValue(value)}`);
     }
   };
   if (composioBatchActions(toolName, args)) {
