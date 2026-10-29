@@ -1070,6 +1070,25 @@ model CapabilityInstall {
   @@map("capability_installs")
 }
 
+model ProactiveSuggestion {
+  id          String   @id @default(cuid())
+  spaceId     String
+  userId      String
+  botId       String
+  source      String
+  title       String
+  rationale   String
+  instruction String
+  status      String   @default("pending")
+  runId       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([spaceId, userId, source, botId, title])
+  @@index([spaceId, userId, status, createdAt])
+  @@map("proactive_suggestions")
+}
+
 model MemoryDocument {
   id        String           @id @default(cuid())
   spaceId   String

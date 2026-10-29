@@ -150,6 +150,10 @@ import {
 import { SearchQueryOutputSchema } from "./search.js";
 import { SecurityEventListInputSchema, SecurityEventSchema } from "./security-events.js";
 import { SettingsScopeSchema, SpaceSettingSchema, settingsScopeInput } from "./settings-scope.js";
+import {
+  GenerateSuggestionsOutputSchema,
+  ProactiveSuggestionSchema,
+} from "./suggestions.js";
 
 const botId = z.object({ botId: Id });
 const groupId = z.object({ groupId: Id });
@@ -1124,6 +1128,12 @@ export const appContract = {
   },
   runs: {
     list: oc.input(z.object({ filter: z.enum(["active", "recent"]) })).output(RunsListOutputSchema),
+  },
+  suggestions: {
+    list: oc.output(z.array(ProactiveSuggestionSchema)),
+    generate: oc.output(GenerateSuggestionsOutputSchema),
+    accept: oc.input(z.object({ id: Id })).output(ProactiveSuggestionSchema),
+    ignore: oc.input(z.object({ id: Id })).output(ProactiveSuggestionSchema),
   },
   voice: {
     catalog: oc.output(z.array(VoiceCatalogEntrySchema)),
