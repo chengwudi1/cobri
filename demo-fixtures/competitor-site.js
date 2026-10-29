@@ -16,7 +16,7 @@ const INITIAL_CHANGELOG = [
 const INITIAL_NEWS = [
   {
     date: "2026-10-20",
-    title: "云图智能团队版新增审计日志，价格从 199 元调整为 229 元",
+    title: "云图智能团队版新增审计日志，计划调价至 229 元，尚未生效，以定价页为准",
   },
   {
     date: "2026-10-12",
