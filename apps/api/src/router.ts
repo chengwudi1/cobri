@@ -1,5 +1,7 @@
 import type {
   AgentHomeStore,
+  AgentRunRequest,
+  AgentRuntime,
   ArtifactStore,
   JobPublisher,
   MemoryStore,
@@ -56,6 +58,12 @@ export interface RouterDeps {
   analytics?: ProductAnalytics;
   cloudAgent?: CloudAgentConnection | null;
   prisma: PrismaClient;
+  runtime?: AgentRuntime;
+  resolveModel?: (scope: {
+    userId: string;
+    spaceId: string;
+    botId: string;
+  }) => Promise<AgentRunRequest["model"]>;
   events: ThreadEvents;
   boardEvents: BoardEvents;
   ticketChanges: TicketChangeNotifier;

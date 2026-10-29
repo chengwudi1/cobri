@@ -666,6 +666,8 @@ async function buildApp(overrides: CreateAppOverrides): Promise<AppHandles> {
     cloudAgent,
     codexCatalog,
     prisma,
+    runtime,
+    resolveModel: executor.resolveModel,
     pushTokens,
     events,
     ticketChanges,

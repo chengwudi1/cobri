@@ -1076,15 +1076,17 @@ model ProactiveSuggestion {
   userId      String
   botId       String
   source      String
+  sourceKey   String   @default("")
   title       String
   rationale   String
   instruction String
   status      String   @default("pending")
+  bucket      String   @default("")
   runId       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@unique([spaceId, userId, source, botId, title])
+  @@unique([spaceId, userId, sourceKey, bucket])
   @@index([spaceId, userId, status, createdAt])
   @@map("proactive_suggestions")
 }
