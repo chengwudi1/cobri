@@ -18,6 +18,7 @@ import { Activity, ArrowLeft, CalendarClock, RefreshCw, ShieldAlert, Wallet } fr
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { PageLoading } from "../components/PageLoading";
+import { SuggestionsCard } from "../components/SuggestionsCard";
 import { useSpaceQueries } from "../lib/query";
 import { formatRelativeTime } from "../lib/relative-time";
 import { errorText } from "../lib/user-error";
@@ -639,6 +640,8 @@ export function OverviewPage() {
             </CardContent>
           </Card>
         ) : null}
+
+        <SuggestionsCard />
 
         <div className="grid gap-4 lg:grid-cols-3">
           <RecentRunsCard

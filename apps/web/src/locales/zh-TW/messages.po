@@ -1048,6 +1048,10 @@ msgstr "瀏覽 MCP 伺服器"
 msgid "Built-in"
 msgstr "內建"
 
+#: src/components/SuggestionsCard.tsx
+msgid "Calendar"
+msgstr ""
+
 #: src/pages/shell/chat-header.tsx
 msgid "Call"
 msgstr "通話"
@@ -1849,6 +1853,10 @@ msgstr "無法關閉"
 msgid "Could not dismiss this server"
 msgstr "無法關閉此伺服器項目"
 
+#: src/components/SuggestionsCard.tsx
+msgid "Could not dispatch this suggestion"
+msgstr ""
+
 #. placeholder {0}: props.name
 #: src/components/ArtifactFileCard.tsx
 msgid "Could not download {0}. Try again."
@@ -1857,6 +1865,14 @@ msgstr "無法下載 {0}。請重試。"
 #: src/components/ArtifactFileCard.tsx
 msgid "Could not download {name}. Try again."
 msgstr "無法下載 {name}。請重試。"
+
+#: src/components/SuggestionsCard.tsx
+msgid "Could not generate suggestions"
+msgstr ""
+
+#: src/components/SuggestionsCard.tsx
+msgid "Could not ignore this suggestion"
+msgstr ""
 
 #: src/pages/PluginsOverlay.tsx
 msgid "Could not install connector"
@@ -1918,6 +1934,10 @@ msgstr "無法載入登入選項"
 #: src/pages/KnowledgeSection.tsx
 msgid "Could not load skill"
 msgstr "無法載入技能"
+
+#: src/components/SuggestionsCard.tsx
+msgid "Could not load suggestions"
+msgstr ""
 
 #: src/pages/Overview.tsx
 msgid "Could not load the overview"
@@ -2234,6 +2254,10 @@ msgstr "憑證：{names}"
 #: src/components/ModelCredits.tsx
 msgid "Credit amount"
 msgstr "額度金額"
+
+#: src/components/SuggestionsCard.tsx
+msgid "CRM"
+msgstr ""
 
 #: src/lib/cron.ts
 msgid "Cron"
@@ -2865,6 +2889,10 @@ msgstr "正在完成 MCP 連線…"
 msgid "Follow-up"
 msgstr ""
 
+#: src/components/SuggestionsCard.tsx
+msgid "For"
+msgstr ""
+
 #: src/pages/Auth.tsx
 msgid "Forgot password?"
 msgstr "忘記密碼？"
@@ -2916,6 +2944,10 @@ msgstr "正在準備"
 msgid "Git event"
 msgstr "Git 事件"
 
+#: src/components/SuggestionsCard.tsx
+msgid "Gmail"
+msgstr ""
+
 #: src/lib/identity-display.ts
 #: src/pages/MessagingSettingsPanel.tsx
 #: src/pages/shell/chat-header.tsx
@@ -2930,6 +2962,11 @@ msgstr "群組設定"
 #: src/pages/ExternalConversationSettings.tsx
 msgid "Group updates"
 msgstr "群組更新"
+
+#. placeholder {0}: suggestion.botName
+#: src/components/SuggestionsCard.tsx
+msgid "Hand to {0}"
+msgstr ""
 
 #: src/components/call/CallCard.tsx
 msgid "Hang up"
@@ -3039,6 +3076,7 @@ msgstr "我做完了"
 msgid "If you heard that, voice is ready."
 msgstr "如果聽到了，說明語音已就緒。"
 
+#: src/components/SuggestionsCard.tsx
 #: src/pages/ExternalConversationSettings.tsx
 msgid "Ignore"
 msgstr "忽略"
@@ -3356,11 +3394,16 @@ msgstr "正在載入預覽…"
 msgid "Loading runs"
 msgstr ""
 
+#: src/components/SuggestionsCard.tsx
+msgid "Loading suggestions"
+msgstr ""
+
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Loading voice providers…"
 msgstr "正在載入語音供應商…"
 
 #: src/components/PageLoading.tsx
+#: src/components/SuggestionsCard.tsx
 #: src/pages/Artifacts.tsx
 #: src/pages/IntegrationSetup.tsx
 #: src/pages/Overview.tsx
@@ -3929,6 +3972,10 @@ msgstr "未列出模型。"
 msgid "No OpenClaw, Hermes or agent document found."
 msgstr "找不到 OpenClaw、Hermes 或代理程式文件。"
 
+#: src/components/SuggestionsCard.tsx
+msgid "No pending suggestions"
+msgstr ""
+
 #: src/pages/Overview.tsx
 msgid "No recent runs"
 msgstr ""
@@ -4382,6 +4429,10 @@ msgstr "上一頁"
 #: src/pages/SettingsOverlay.tsx
 msgid "Previous settings sections"
 msgstr "上一組設定區段"
+
+#: src/components/SuggestionsCard.tsx
+msgid "Primary Bot"
+msgstr ""
 
 #: src/pages/Board.tsx
 msgid "Priority"
@@ -4955,6 +5006,14 @@ msgstr "正在儲存…"
 msgid "Say yes or no, or answer in a sentence."
 msgstr "回答是或否，或一句話說明。"
 
+#: src/components/SuggestionsCard.tsx
+msgid "Scan now"
+msgstr ""
+
+#: src/components/SuggestionsCard.tsx
+msgid "Scanning…"
+msgstr ""
+
 #: src/components/ModelCredits.tsx
 msgid "Scheduled routines"
 msgstr "排程例行任務"
@@ -5467,6 +5526,10 @@ msgstr "使用自己的 AI 訂閱"
 msgid "Subscription required"
 msgstr "需要訂閱"
 
+#: src/components/SuggestionsCard.tsx
+msgid "Suggestions"
+msgstr ""
+
 #: src/lib/cron.ts
 msgid "Sunday"
 msgstr "週日"
@@ -5585,6 +5648,10 @@ msgstr "模型供應商回傳了錯誤。"
 #: src/lib/run-error.ts
 msgid "The model returned an unusable response. Try again."
 msgstr "模型回傳了無法使用的回覆，請再試一次。"
+
+#: src/components/SuggestionsCard.tsx
+msgid "The Primary Bot scans your local inbox, calendar, and CRM."
+msgstr ""
 
 #: src/lib/model-connection-preflight.ts
 msgid "The provider is rate-limiting requests."
@@ -5868,6 +5935,7 @@ msgstr "試用於 {day} 結束"
 msgid "Trigger"
 msgstr ""
 
+#: src/components/SuggestionsCard.tsx
 #: src/pages/ActivityList.tsx
 #: src/pages/Onboarding.tsx
 #: src/pages/Overview.tsx
@@ -6270,6 +6338,7 @@ msgstr "工作"
 msgid "Working instructions"
 msgstr "工作指示"
 
+#: src/components/SuggestionsCard.tsx
 #: src/components/ToolActivityDisclosure.tsx
 #: src/lib/roster-status.ts
 #: src/pages/Auth.tsx

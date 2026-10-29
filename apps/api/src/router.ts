@@ -42,6 +42,7 @@ import { messagingRoutes } from "./routes/messaging.js";
 import { modelsRoutes } from "./routes/models.js";
 import { routinesRoutes } from "./routes/routines.js";
 import { spacesRoutes } from "./routes/spaces.js";
+import { suggestionsRoutes } from "./routes/suggestions.js";
 import { threadsRoutes } from "./routes/threads.js";
 import type { VoiceDeps } from "./voice.js";
 
@@ -150,6 +151,7 @@ export function createRouter(deps: RouterDeps) {
     ...computerRoutes(ctx),
     ...memoryRoutes(ctx),
     ...routinesRoutes(ctx),
+    ...suggestionsRoutes(ctx),
     ...boardsRoutes(ctx),
     ...mcpRoutes(ctx),
     ...connectionsRoutes(ctx),

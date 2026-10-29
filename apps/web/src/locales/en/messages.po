@@ -1047,6 +1047,10 @@ msgstr "Browse MCP servers"
 msgid "Built-in"
 msgstr "Built-in"
 
+#: src/components/SuggestionsCard.tsx
+msgid "Calendar"
+msgstr "Calendar"
+
 #: src/pages/shell/chat-header.tsx
 msgid "Call"
 msgstr "Call"
@@ -1848,6 +1852,10 @@ msgstr "Could not dismiss"
 msgid "Could not dismiss this server"
 msgstr "Could not dismiss this server"
 
+#: src/components/SuggestionsCard.tsx
+msgid "Could not dispatch this suggestion"
+msgstr "Could not dispatch this suggestion"
+
 #. placeholder {0}: props.name
 #: src/components/ArtifactFileCard.tsx
 msgid "Could not download {0}. Try again."
@@ -1856,6 +1864,14 @@ msgstr "Could not download {0}. Try again."
 #: src/components/ArtifactFileCard.tsx
 msgid "Could not download {name}. Try again."
 msgstr "Could not download {name}. Try again."
+
+#: src/components/SuggestionsCard.tsx
+msgid "Could not generate suggestions"
+msgstr "Could not generate suggestions"
+
+#: src/components/SuggestionsCard.tsx
+msgid "Could not ignore this suggestion"
+msgstr "Could not ignore this suggestion"
 
 #: src/pages/PluginsOverlay.tsx
 msgid "Could not install connector"
@@ -1917,6 +1933,10 @@ msgstr "Could not load sign-in options"
 #: src/pages/KnowledgeSection.tsx
 msgid "Could not load skill"
 msgstr "Could not load skill"
+
+#: src/components/SuggestionsCard.tsx
+msgid "Could not load suggestions"
+msgstr "Could not load suggestions"
 
 #: src/pages/Overview.tsx
 msgid "Could not load the overview"
@@ -2233,6 +2253,10 @@ msgstr "Credentials: {names}"
 #: src/components/ModelCredits.tsx
 msgid "Credit amount"
 msgstr "Credit amount"
+
+#: src/components/SuggestionsCard.tsx
+msgid "CRM"
+msgstr "CRM"
 
 #: src/lib/cron.ts
 msgid "Cron"
@@ -2864,6 +2888,10 @@ msgstr "Finishing MCP connection…"
 msgid "Follow-up"
 msgstr "Follow-up"
 
+#: src/components/SuggestionsCard.tsx
+msgid "For"
+msgstr "For"
+
 #: src/pages/Auth.tsx
 msgid "Forgot password?"
 msgstr "Forgot password?"
@@ -2915,6 +2943,10 @@ msgstr "Getting ready"
 msgid "Git event"
 msgstr "Git event"
 
+#: src/components/SuggestionsCard.tsx
+msgid "Gmail"
+msgstr "Gmail"
+
 #: src/lib/identity-display.ts
 #: src/pages/MessagingSettingsPanel.tsx
 #: src/pages/shell/chat-header.tsx
@@ -2929,6 +2961,11 @@ msgstr "Group settings"
 #: src/pages/ExternalConversationSettings.tsx
 msgid "Group updates"
 msgstr "Group updates"
+
+#. placeholder {0}: suggestion.botName
+#: src/components/SuggestionsCard.tsx
+msgid "Hand to {0}"
+msgstr "Hand to {0}"
 
 #: src/components/call/CallCard.tsx
 msgid "Hang up"
@@ -3038,6 +3075,7 @@ msgstr "I’m done"
 msgid "If you heard that, voice is ready."
 msgstr "If you heard that, voice is ready."
 
+#: src/components/SuggestionsCard.tsx
 #: src/pages/ExternalConversationSettings.tsx
 msgid "Ignore"
 msgstr "Ignore"
@@ -3355,11 +3393,16 @@ msgstr "Loading preview…"
 msgid "Loading runs"
 msgstr "Loading runs"
 
+#: src/components/SuggestionsCard.tsx
+msgid "Loading suggestions"
+msgstr "Loading suggestions"
+
 #: src/pages/VoiceSettingsOverlay.tsx
 msgid "Loading voice providers…"
 msgstr "Loading voice providers…"
 
 #: src/components/PageLoading.tsx
+#: src/components/SuggestionsCard.tsx
 #: src/pages/Artifacts.tsx
 #: src/pages/IntegrationSetup.tsx
 #: src/pages/Overview.tsx
@@ -3928,6 +3971,10 @@ msgstr "No models listed."
 msgid "No OpenClaw, Hermes or agent document found."
 msgstr "No OpenClaw, Hermes or agent document found."
 
+#: src/components/SuggestionsCard.tsx
+msgid "No pending suggestions"
+msgstr "No pending suggestions"
+
 #: src/pages/Overview.tsx
 msgid "No recent runs"
 msgstr "No recent runs"
@@ -4381,6 +4428,10 @@ msgstr "Previous page"
 #: src/pages/SettingsOverlay.tsx
 msgid "Previous settings sections"
 msgstr "Previous settings sections"
+
+#: src/components/SuggestionsCard.tsx
+msgid "Primary Bot"
+msgstr "Primary Bot"
 
 #: src/pages/Board.tsx
 msgid "Priority"
@@ -4954,6 +5005,14 @@ msgstr "Saving…"
 msgid "Say yes or no, or answer in a sentence."
 msgstr "Say yes or no, or answer in a sentence."
 
+#: src/components/SuggestionsCard.tsx
+msgid "Scan now"
+msgstr "Scan now"
+
+#: src/components/SuggestionsCard.tsx
+msgid "Scanning…"
+msgstr "Scanning…"
+
 #: src/components/ModelCredits.tsx
 msgid "Scheduled routines"
 msgstr "Scheduled routines"
@@ -5466,6 +5525,10 @@ msgstr "Subscribe with your own AI"
 msgid "Subscription required"
 msgstr "Subscription required"
 
+#: src/components/SuggestionsCard.tsx
+msgid "Suggestions"
+msgstr "Suggestions"
+
 #: src/lib/cron.ts
 msgid "Sunday"
 msgstr "Sunday"
@@ -5584,6 +5647,10 @@ msgstr "The model provider returned an error."
 #: src/lib/run-error.ts
 msgid "The model returned an unusable response. Try again."
 msgstr "The model returned an unusable response. Try again."
+
+#: src/components/SuggestionsCard.tsx
+msgid "The Primary Bot scans your local inbox, calendar, and CRM."
+msgstr "The Primary Bot scans your local inbox, calendar, and CRM."
 
 #: src/lib/model-connection-preflight.ts
 msgid "The provider is rate-limiting requests."
@@ -5867,6 +5934,7 @@ msgstr "Trial ends {day}"
 msgid "Trigger"
 msgstr "Trigger"
 
+#: src/components/SuggestionsCard.tsx
 #: src/pages/ActivityList.tsx
 #: src/pages/Onboarding.tsx
 #: src/pages/Overview.tsx
@@ -6269,6 +6337,7 @@ msgstr "Work"
 msgid "Working instructions"
 msgstr "Working instructions"
 
+#: src/components/SuggestionsCard.tsx
 #: src/components/ToolActivityDisclosure.tsx
 #: src/lib/roster-status.ts
 #: src/pages/Auth.tsx

@@ -7,11 +7,17 @@ import { createRoot } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+const suggestionRpc = vi.hoisted(() => ({
+  generate: vi.fn(),
+  accept: vi.fn(),
+  ignore: vi.fn(),
+}));
 const state = vi.hoisted(() => ({
   bootstrap: null as any,
   active: { runs: [] as any[] },
   recent: { runs: [] as any[] },
   usage: null as any,
+  suggestions: [] as any[],
   computers: {} as Record<string, any>,
   activeMode: "resolve" as "resolve" | "pending" | "reject",
   recentMode: "resolve" as "resolve" | "pending" | "reject",
@@ -51,6 +57,14 @@ vi.mock("../lib/query", () => ({
         queryOptions: () => ({ queryKey: ["usage"], queryFn: async () => state.usage }),
       },
     },
+    suggestions: {
+      list: {
+        queryOptions: () => ({
+          queryKey: ["suggestions"],
+          queryFn: async () => state.suggestions,
+        }),
+      },
+    },
     computer: {
       status: {
         queryOptions: ({ input }: { input: { botId: string } }) => ({
@@ -63,6 +77,9 @@ vi.mock("../lib/query", () => ({
 }));
 vi.mock("../lib/relative-time", () => ({ formatRelativeTime: () => "just now" }));
 vi.mock("../lib/user-error", () => ({ errorText: (error: unknown) => String(error) }));
+vi.mock("../lib/space-rpc", () => ({
+  useSpaceRpc: () => ({ suggestions: suggestionRpc }),
+}));
 vi.mock("@lingui/react/macro", () => {
   const t = (parts: TemplateStringsArray, ...values: unknown[]) =>
     parts.reduce((text, part, index) => text + part + String(values[index] ?? ""), "");
@@ -166,6 +183,10 @@ beforeEach(() => {
     costUsd: 0.0013,
     models: [{ provider: "deepseek", model: "deepseek-flash" }],
   };
+  state.suggestions = [];
+  suggestionRpc.generate.mockReset();
+  suggestionRpc.accept.mockReset();
+  suggestionRpc.ignore.mockReset();
   state.computers = Object.fromEntries(
     primaryBots.map((item) => [item.id, { state: "stopped", mode: "dedicated" }]),
   );
@@ -242,6 +263,48 @@ it("keeps run errors visible and retries them", async () => {
   await act(async () => retries[0]!.click());
   await settle();
   expect(state.activeCalls + state.recentCalls).toBeGreaterThan(before);
+});
+
+it("dispatches and ignores a suggestion from the overview card", async () => {
+  state.suggestions = [
+    {
+      id: "suggestion-1",
+      spaceId: "space-1",
+      userId: "user-1",
+      botId: "bot-inbox",
+      botName: "收件箱",
+      botColor: "#3366ff",
+      source: "gmail",
+      title: "确认：远山科技客户会邀",
+      rationale: "李总发来的会邀需要确认。",
+      instruction: "检查并准备回复草稿。",
+      status: "pending",
+      runId: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ];
+  suggestionRpc.accept.mockResolvedValue({});
+  suggestionRpc.ignore.mockResolvedValue({});
+  await renderPage();
+  await settle();
+
+  const card = container.querySelector('[data-testid="suggestion-card"]');
+  expect(card).not.toBeNull();
+  const hand = [...card!.querySelectorAll("button")].find((button) =>
+    button.textContent?.includes("Hand to"),
+  );
+  expect(hand?.textContent).toContain("收件箱");
+  await act(async () => hand!.click());
+  await settle();
+  expect(suggestionRpc.accept).toHaveBeenCalledWith({ id: "suggestion-1" });
+
+  const ignore = [...container.querySelectorAll("button")].find(
+    (button) => button.textContent === "Ignore",
+  );
+  await act(async () => ignore!.click());
+  await settle();
+  expect(suggestionRpc.ignore).toHaveBeenCalledWith({ id: "suggestion-1" });
 });
 
 it("shows an empty state when the primary group is missing", async () => {
