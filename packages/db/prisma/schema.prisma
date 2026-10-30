@@ -300,6 +300,8 @@ model Space {
   deletionClaimId             String?
   memberships                 SpaceMember[]
   bots                        Bot[]
+  botShares                   BotShare[]
+  sharedThreads               SharedThread[]
   botSections                 BotSection[]
   botDeletions                BotDeletion[]
   threads                     Thread[]
@@ -568,6 +570,8 @@ model Bot {
   mcpServers        BotMcpServer[]
   agentImports      AgentImport[]
   groupMembers      ChatGroupMember[]
+  botShares         BotShare[]
+  sharedThreads     SharedThread[]
   botSecrets BotSecret[]
   assignedTickets   Ticket[]          @relation("TicketAssigneeBot")
   createdTickets    Ticket[]          @relation("TicketCreatorBot")
@@ -583,6 +587,38 @@ model Bot {
   @@map("bots")
   messagingInstallations MessagingInstallation[]
   messagingInstallSessions MessagingInstallSession[]
+}
+
+model BotShare {
+  id        String   @id @default(cuid())
+  botId     String
+  bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  spaceId   String
+  space     Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  sharedBy  String
+  createdAt DateTime @default(now())
+
+  @@unique([botId, spaceId])
+  @@index([spaceId, sharedBy])
+  @@map("bot_shares")
+}
+
+/// A private container for one shared bot member. It is deliberately not a
+/// Thread: messages and runs stay on the owner's Thread until a later release
+/// links these containers to the run pipeline.
+model SharedThread {
+  id        String   @id @default(cuid())
+  botId     String
+  bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  userId    String
+  spaceId   String
+  space     Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  title     String
+  createdAt DateTime @default(now())
+
+  @@unique([botId, userId])
+  @@index([spaceId, userId, createdAt])
+  @@map("shared_threads")
 }
 
 model BotSection {

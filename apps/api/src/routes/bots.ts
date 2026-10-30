@@ -53,6 +53,7 @@ import {
 import { deleteAgentSecret, listAgentSecrets, putAgentSecret } from "../agent-secrets.js";
 import { requireIdentityConfirmation } from "../identity-confirmation.js";
 import type { RouterDeps } from "../router.js";
+import { createSharedBotsService } from "../shared-bots.js";
 import { loadMessagePage } from "../thread-message-pages.js";
 import type { RouterContext } from "./context.js";
 import { computerContext, modelSetup, THREAD_MESSAGE_PAGE_SIZE } from "./shared.js";
@@ -250,6 +251,7 @@ export async function enqueueBotIntroRun(deps: RouterDeps, actor: Actor, bot: Bo
 export function botsRoutes(ctx: RouterContext) {
   const { deps, repos, botModelValidation, removeBot, agentImportServices, groupRepos, authed } =
     ctx;
+  const sharedBots = createSharedBotsService(deps.prisma);
   return {
     bots: {
       list: authed.bots.list.handler(async ({ context }) => repos.listBots(context.actor)),
@@ -578,6 +580,23 @@ export function botsRoutes(ctx: RouterContext) {
           webhookConfigured: true as const,
         };
       }),
+      share: authed.bots.share.handler(async ({ context, input }) =>
+        sharedBots.share(context.actor, input),
+      ),
+      unshare: authed.bots.unshare.handler(async ({ context, input }) =>
+        sharedBots.unshare(context.actor, input),
+      ),
+      listShared: authed.bots.listShared.handler(async ({ context }) =>
+        sharedBots.listShared(context.actor),
+      ),
+    },
+    sharedThreads: {
+      create: authed.sharedThreads.create.handler(async ({ context, input }) =>
+        sharedBots.createThread(context.actor, input),
+      ),
+      list: authed.sharedThreads.list.handler(async ({ context, input }) =>
+        sharedBots.listThreads(context.actor, input ?? {}),
+      ),
     },
     groups: {
       create: authed.groups.create.handler(async ({ context, input }) => {

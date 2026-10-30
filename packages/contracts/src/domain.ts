@@ -138,6 +138,45 @@ export const BotSchema = z.object({
 });
 export type Bot = z.infer<typeof BotSchema>;
 
+/** A bot another member shared into the current space. */
+export const SharedBotSchema = z.object({
+  botId: Id,
+  name: z.string(),
+  title: z.string(),
+  description: z.string(),
+  color: z.string(),
+  sharedBy: Id,
+  sharedAt: z.string(),
+});
+export type SharedBot = z.infer<typeof SharedBotSchema>;
+
+export const SHARED_THREAD_TITLE_MAX_LENGTH = 120;
+
+export const CreateSharedThreadInput = z.object({
+  botId: Id,
+  title: z.string().trim().min(1).max(SHARED_THREAD_TITLE_MAX_LENGTH).optional(),
+});
+export type CreateSharedThreadInput = z.infer<typeof CreateSharedThreadInput>;
+
+export const ListSharedThreadsInput = z.object({ botId: Id.optional() });
+export type ListSharedThreadsInput = z.infer<typeof ListSharedThreadsInput>;
+
+/**
+ * One member's private container for a shared bot. It carries no messages or
+ * runs yet; `readOnly` means the bot is no longer shared, so the container
+ * stays readable while new work is refused.
+ */
+export const SharedThreadSchema = z.object({
+  id: Id,
+  botId: Id,
+  spaceId: Id,
+  userId: Id,
+  title: z.string(),
+  createdAt: z.string(),
+  readOnly: z.boolean(),
+});
+export type SharedThread = z.infer<typeof SharedThreadSchema>;
+
 export const ReorderBotsInput = z.object({
   botIds: z
     .array(Id)
