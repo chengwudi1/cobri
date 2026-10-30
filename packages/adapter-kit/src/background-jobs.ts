@@ -34,6 +34,10 @@ const payloadSchemas = {
     ticketId: z.string().min(1),
     tokenDigest: z.string().min(1),
   }),
+  "suggestions.scan": z.object({
+    spaceId: z.string().min(1),
+    userId: z.string().min(1),
+  }),
 } satisfies { [Name in BackgroundJobName]: z.ZodType<BackgroundJobPayloads[Name]> };
 
 export function parseBackgroundJob(name: string, payload: unknown): BackgroundJob {
@@ -198,5 +202,20 @@ export function cloudAgentPollJob(
     payload,
     replaceKey: cloudAgentPollJobKey(payload.agentId),
     ...(availableAt ? { availableAt } : {}),
+  };
+}
+
+export function suggestionsScanJobKey(spaceId: string, userId: string): string {
+  return `suggestions.scan:${spaceId}:${userId}`;
+}
+
+/** One queued scan per tenant; a failed scan retries a few times, then the next interval replaces it. */
+export function suggestionsScanJob(spaceId: string, userId: string): BackgroundJob {
+  return {
+    name: "suggestions.scan",
+    payload: { spaceId, userId },
+    replaceKey: suggestionsScanJobKey(spaceId, userId),
+    keepExisting: true,
+    maxAttempts: 3,
   };
 }

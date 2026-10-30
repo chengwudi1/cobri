@@ -721,6 +721,8 @@ export interface BackgroundJobPayloads {
   "cloud_agent.poll": { agentId: string };
   /** Read an Expo push receipt; the token is identified by its digest, never stored. */
   "push.receipt": { userId: string; ticketId: string; tokenDigest: string };
+  /** One tenant's periodic Primary Bot scan; the reconciler owns the cadence. */
+  "suggestions.scan": { spaceId: string; userId: string };
 }
 
 export type BackgroundJobName = keyof BackgroundJobPayloads;

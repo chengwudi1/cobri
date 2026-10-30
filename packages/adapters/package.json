@@ -6,6 +6,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./host-computer-server": "./src/host-computer-server.ts",
+    "./suggestions": "./src/suggestions.ts",
+    "./suggestions-config": "./src/suggestions-config.ts",
+    "./suggestions-scan": "./src/suggestions-scan.ts",
     "./user-device-client": "./src/user-device-client.ts"
   },
   "scripts": {

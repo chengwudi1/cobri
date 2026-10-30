@@ -1,7 +1,7 @@
+import { suggestionBucket } from "@rakazo/adapters/suggestions-config";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RouterContext } from "./routes/context.js";
 import { suggestionsRoutes } from "./routes/suggestions.js";
-import { suggestionBucket } from "./suggestions-config.js";
 
 const recordUsage = vi.hoisted(() => vi.fn(async () => undefined));
 vi.mock("@rakazo/db", () => ({ recordUsage }));
@@ -13,9 +13,9 @@ vi.mock("./thread-target.js", () => ({ sendThreadMessage, resolveThreadTarget })
 
 const actor = { spaceId: "space-1", userId: "user-1" };
 const bots = [
-  { id: "bot-primary", name: "总管", color: "#333333" },
-  { id: "bot-inbox", name: "收件箱", color: "#111111" },
-  { id: "bot-calendar", name: "日程", color: "#222222" },
+  { id: "bot-primary", name: "总管", color: "#333333", spawnKey: "demo:chief" },
+  { id: "bot-inbox", name: "收件箱", color: "#111111", spawnKey: "demo:inbox" },
+  { id: "bot-calendar", name: "日程", color: "#222222", spawnKey: "demo:calendar" },
 ];
 const installs = [
   { name: "Fake Gmail", source: "http://127.0.0.1:4312" },
@@ -230,6 +230,21 @@ describe("suggestions routes", () => {
       (await api.suggestions.generate.handler({ context: { actor }, input: {} } as never)).created,
     ).toBe(0);
     expect(rows).toHaveLength(1);
+  });
+
+  it("returns an empty state when the space has no primary bot role", async () => {
+    prisma.bot.findMany.mockResolvedValueOnce([
+      { id: "bot-solo", name: "Solo", color: "#000000", spawnKey: null },
+    ]);
+    const api = routes();
+
+    const result = await api.suggestions.generate.handler({
+      context: { actor },
+      input: {},
+    } as never);
+
+    expect(result).toEqual({ suggestions: [], created: 0 });
+    expect(rows).toHaveLength(0);
   });
 
   it("claims pending suggestions atomically before dispatching a run", async () => {

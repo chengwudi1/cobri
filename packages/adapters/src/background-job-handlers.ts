@@ -24,6 +24,7 @@ import type { ExpoPushProvider } from "./expo-push.js";
 import { compactHistory } from "./history-compaction.js";
 import type { MemoryProviderResolver } from "./memory-provider-factory.js";
 import { deliverMessagingOutbound, mirrorMessagingOutbound } from "./messaging-delivery.js";
+import { generateSuggestions } from "./suggestions.js";
 import { expireTaughtSkillTeaching } from "./teaching-session.js";
 
 type Tenant = { spaceId: string; userId: string };
@@ -178,6 +179,29 @@ export function createBackgroundJobHandlers(deps: {
     // A receipt belongs to a device's push token, not to a Space.
     "push.receipt": async (payload) => {
       await runAsSystem("check a push receipt", () => deps.notifications?.checkReceipt(payload));
+    },
+    "suggestions.scan": async ({ spaceId, userId }) => {
+      await runAsTenant({ spaceId, userId }, async () => {
+        try {
+          const result = await generateSuggestions(
+            { prisma: deps.prisma, runtime: deps.runtime, resolveModel: deps.executor.resolveModel },
+            { spaceId, userId },
+          );
+          getLogger().info("suggestions.scan", {
+            "space.id": spaceId,
+            "user.id": userId,
+            created: result.created,
+            ...(result.skipped ? { skipped: result.skipped } : {}),
+          });
+        } catch (error) {
+          getLogger().error("suggestions.scan_failed", {
+            "space.id": spaceId,
+            "user.id": userId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          throw error;
+        }
+      });
     },
     "history.compact": asOwner(thread, async (payload) => {
       // Retrieval policies use stored context without paid message-count compaction.

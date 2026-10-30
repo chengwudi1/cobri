@@ -29,6 +29,7 @@ import {
   createRunExecutor,
   createRunSandbox,
   createRunSecretWriter,
+  createSuggestionsScanReconciler,
   createTicketChangeNotifier,
   createWebProvider,
   databaseCapacityBackoffMs,
@@ -347,6 +348,7 @@ async function main() {
     reconcileHomeStorage: homeStorageSweeper(home),
     reconcileIdleComputers: createIdleComputerSweeper({ prisma, jobs }),
     reconcileDeadJobs: inMemoryJobs ? undefined : createDeadJobPruner(pool),
+    reconcileSuggestions: createSuggestionsScanReconciler({ prisma, jobs }),
   });
   let stopHealth: (() => Promise<void>) | undefined;
   const shutdown = new AbortController();

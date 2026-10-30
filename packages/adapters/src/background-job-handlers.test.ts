@@ -15,11 +15,15 @@ import { createRunExecutor } from "./executor.js";
 import { compactHistory } from "./history-compaction.js";
 import { deliverMessagingOutbound, mirrorMessagingOutbound } from "./messaging-delivery.js";
 import type { EncryptedSecretStore } from "./secrets.js";
+import { generateSuggestions } from "./suggestions.js";
 
 vi.mock("./history-compaction.js", () => ({ compactHistory: vi.fn(async () => undefined) }));
 vi.mock("./messaging-delivery.js", () => ({
   deliverMessagingOutbound: vi.fn(async () => undefined),
   mirrorMessagingOutbound: vi.fn(async () => undefined),
+}));
+vi.mock("./suggestions.js", () => ({
+  generateSuggestions: vi.fn(async () => ({ created: 0 })),
 }));
 
 const owner = { spaceId: "space-1", userId: "user-1" };
@@ -67,6 +71,32 @@ describe("createBackgroundJobHandlers", () => {
       true,
     );
     installLogger(createLogger({ service: "rakazo-worker", level: "off", sinks: [] }));
+  });
+
+  it("scans suggestions as the tenant the reconciler queued", async () => {
+    const prisma = {} as PrismaClient;
+    const runtime = {} as AgentRuntime;
+    const resolveModel = vi.fn();
+    const handlers = createBackgroundJobHandlers({
+      executor: { resolveModel } as unknown as ReturnType<typeof createRunExecutor>,
+      prisma,
+      sandbox: {} as unknown as SandboxProvider,
+      home: {} as unknown as AgentHomeStore,
+      artifacts: {} as unknown as ArtifactStore,
+      jobs: {} as JobPublisher,
+      events: {} as unknown as ThreadEvents,
+      workerId: "worker-1",
+      runtime,
+      secretStore: {} as unknown as EncryptedSecretStore,
+      memoryProviders: { resolve: vi.fn(async () => null) },
+    });
+
+    await handlers["suggestions.scan"]({ spaceId: "space-1", userId: "user-1" });
+
+    expect(generateSuggestions).toHaveBeenCalledWith(
+      { prisma, runtime, resolveModel },
+      { spaceId: "space-1", userId: "user-1" },
+    );
   });
 
   it("compacts the requested thread with the runtime, job publisher, and model key it was given", async () => {
