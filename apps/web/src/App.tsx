@@ -55,6 +55,7 @@ const BoardPage = lazyComponent(() => import("./pages/Board").then((module) => m
 const OverviewPage = lazyComponent(() =>
   import("./pages/Overview").then((module) => module.OverviewPage),
 );
+const TasksPage = lazyComponent(() => import("./pages/Tasks").then((module) => module.TasksPage));
 const NavLinkPage = lazyComponent(() =>
   import("./pages/NavLinkPage").then((module) => module.NavLinkPage),
 );
@@ -205,6 +206,7 @@ function SessionApp() {
               <Route path="/app" element={<ShellPage />} />
               <Route path="/app/g/:groupId" element={<ShellPage />} />
               <Route path="/app/overview" element={<OverviewPage />} />
+              <Route path="/app/tasks" element={<TasksPage />} />
               <Route path="/app/artifacts" element={<ArtifactsPage />} />
               <Route path="/app/artifacts/:artifactId" element={<ArtifactsPage />} />
               {ticketBoardEnabled ? <Route path="/app/board" element={<BoardPage />} /> : null}

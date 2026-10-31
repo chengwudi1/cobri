@@ -45,6 +45,7 @@ export function ShellSidebar({
   navigate,
   setNewSpaceOpen,
   setCreateBotOpen,
+  setCreateTeamOpen,
   roster,
   archived,
   footerLogos,
@@ -69,6 +70,7 @@ export function ShellSidebar({
   navigate: (path: string) => void;
   setNewSpaceOpen: (open: boolean) => void;
   setCreateBotOpen: (open: boolean) => void;
+  setCreateTeamOpen: (open: boolean) => void;
   roster: ReactNode;
   archived: ReactNode;
   footerLogos: Array<{ name: string; logo?: string | null }>;
@@ -160,6 +162,7 @@ export function ShellSidebar({
           navigate={navigate}
           setNewSpaceOpen={setNewSpaceOpen}
           setCreateBotOpen={setCreateBotOpen}
+          setCreateTeamOpen={setCreateTeamOpen}
         />
         {mini || !(activityMode || searchOpen || query) ? null : (
           <InputGroup
@@ -344,6 +347,11 @@ function ShellSidebarFooter({
           setMenuOpen(false);
           closeMobileSidebar();
           navigate("/app/overview");
+        }}
+        onTasks={() => {
+          setMenuOpen(false);
+          closeMobileSidebar();
+          navigate("/app/tasks");
         }}
         onArtifacts={() => {
           setMenuOpen(false);

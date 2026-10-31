@@ -34,6 +34,7 @@ import type { BillingService } from "./billing.js";
 import { accountRoutes } from "./routes/account.js";
 import { boardsRoutes } from "./routes/boards.js";
 import { botsRoutes } from "./routes/bots.js";
+import { teamsRoutes } from "./routes/teams.js";
 import { computerRoutes } from "./routes/computer.js";
 import { connectionsRoutes } from "./routes/connections.js";
 import { contentRoutes } from "./routes/content.js";
@@ -155,6 +156,7 @@ export function createRouter(deps: RouterDeps) {
     ...spacesRoutes(ctx),
     ...modelsRoutes(ctx),
     ...botsRoutes(ctx),
+    ...teamsRoutes(ctx),
     ...threadsRoutes(ctx),
     ...computerRoutes(ctx),
     ...memoryRoutes(ctx),

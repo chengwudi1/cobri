@@ -230,6 +230,38 @@ export const GroupSchema = z.object({
 });
 export type Group = z.infer<typeof GroupSchema>;
 
+export const TeamTemplateBotSummarySchema = z.object({
+  key: z.string(),
+  name: z.string(),
+  title: z.string(),
+  description: z.string(),
+  color: z.string(),
+  tools: z.array(z.string()),
+  approval: z.string(),
+});
+
+export const TeamTemplateSummarySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  groupName: z.string(),
+  bots: z.array(TeamTemplateBotSummarySchema),
+});
+
+export const CreateTeamInput = z.object({
+  templateId: z.string().trim().min(1),
+});
+
+export const CreateTeamOutput = z.object({
+  group: GroupSchema,
+  bots: z.array(BotSchema),
+});
+
+export type TeamTemplateBotSummary = z.infer<typeof TeamTemplateBotSummarySchema>;
+export type TeamTemplateSummary = z.infer<typeof TeamTemplateSummarySchema>;
+export type CreateTeamInput = z.infer<typeof CreateTeamInput>;
+export type CreateTeamOutput = z.infer<typeof CreateTeamOutput>;
+
 const GroupBotIds = z
   .array(Id)
   .min(GROUP_MEMBER_MIN)

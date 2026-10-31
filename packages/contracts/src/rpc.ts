@@ -74,6 +74,8 @@ import {
   CreateRoutineInput,
   CreateScratchpadItemInput,
   CreateSharedThreadInput,
+  CreateTeamInput,
+  CreateTeamOutput,
   DeploymentSettingsSchema,
   ExportManifestSchema,
   ExternalConversationPolicySchema,
@@ -120,6 +122,7 @@ import {
   SpaceSchema,
   TaughtSkillSchema,
   TeachRecordingEventSchema,
+  TeamTemplateSummarySchema,
   ThinkingLevelSchema,
   ThreadMessagePageSchema,
   ThreadSnapshotSchema,
@@ -456,6 +459,10 @@ export const appContract = {
     archive: oc.input(groupId).output(z.object({ ok: z.literal(true) })),
     restore: oc.input(groupId).output(z.object({ ok: z.literal(true) })),
     remove: oc.input(groupId).output(z.object({ ok: z.literal(true) })),
+  },
+  teams: {
+    listTemplates: oc.output(z.array(TeamTemplateSummarySchema)),
+    create: oc.input(CreateTeamInput).output(CreateTeamOutput),
   },
   botSections: {
     list: oc.output(z.array(BotSectionSchema)),

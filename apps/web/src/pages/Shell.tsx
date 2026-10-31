@@ -673,6 +673,23 @@ function SpaceShell() {
     await refreshBots().catch(() => undefined);
   }
 
+  async function createTeam(templateId: string) {
+    const result = await rpc.teams.create({ templateId });
+    if (!alive.current) return;
+    setBots((current) => [
+      ...result.bots,
+      ...current.filter((bot) => !result.bots.some((created) => created.id === bot.id)),
+    ]);
+    setGroups((current) => [
+      result.group,
+      ...current.filter((group) => group.id !== result.group.id),
+    ]);
+    dialogs.setCreateTeamOpen(false);
+    navigate(`/app/g/${result.group.id}`);
+    setPanel(null);
+    await refreshBots().catch(() => undefined);
+  }
+
   const contextBot =
     botMenu?.kind === "bot" ? bots.find((bot) => bot.id === botMenu.id) : undefined;
   const contextGroup =
@@ -729,6 +746,7 @@ function SpaceShell() {
         navigate={navigate}
         setNewSpaceOpen={dialogs.setNewSpaceOpen}
         setCreateBotOpen={dialogs.setCreateBotOpen}
+        setCreateTeamOpen={dialogs.setCreateTeamOpen}
         roster={
           <SidebarRoster
             mini={miniSidebar}
@@ -1064,6 +1082,7 @@ function SpaceShell() {
           openSpaceSettings={openSpaceSettings}
           closeMobileSidebar={() => setMobileSidebarOpen(false)}
           createBot={createBot}
+          createTeam={createTeam}
           onImportFromCreate={() => {
             dialogs.setCreateBotOpen(false);
             openImport(null, true);

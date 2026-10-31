@@ -16,6 +16,7 @@ import { CommandPalette } from "./command-palette";
 import { isCommandPaletteHotkey } from "./command-palette-hotkey";
 import type { CreateBotDialogInput } from "./create-bot-dialog";
 import { CreateBotDialog } from "./create-bot-dialog";
+import { CreateTeamDialog } from "./create-team-dialog";
 import {
   ClearConversationDialog,
   DeleteBotDialog,
@@ -51,6 +52,7 @@ export function useShellDialogs() {
   const [deleteSectionTarget, setDeleteSectionTarget] = useState<SectionTarget | null>(null);
   const [newSpaceOpen, setNewSpaceOpen] = useState(false);
   const [createBotOpen, setCreateBotOpen] = useState(false);
+  const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -84,6 +86,8 @@ export function useShellDialogs() {
     setNewSpaceOpen,
     createBotOpen,
     setCreateBotOpen,
+    createTeamOpen,
+    setCreateTeamOpen,
     commandPaletteOpen,
     setCommandPaletteOpen,
   };
@@ -107,6 +111,7 @@ export function ShellDialogs({
   openSpaceSettings,
   closeMobileSidebar,
   createBot,
+  createTeam,
   onImportFromCreate,
   clearOpenThread,
   deleteRoutineDialogProps,
@@ -125,6 +130,7 @@ export function ShellDialogs({
   openSpaceSettings: (spaceId: string) => void;
   closeMobileSidebar: () => void;
   createBot: (input: CreateBotDialogInput) => Promise<void>;
+  createTeam: (templateId: string) => Promise<void>;
   onImportFromCreate: () => void;
   clearOpenThread: () => void;
   deleteRoutineDialogProps: ComponentProps<typeof DeleteItemDialog> | null;
@@ -152,6 +158,8 @@ export function ShellDialogs({
     setNewSpaceOpen,
     createBotOpen,
     setCreateBotOpen,
+    createTeamOpen,
+    setCreateTeamOpen,
     commandPaletteOpen,
     setCommandPaletteOpen,
   } = dialogs;
@@ -316,6 +324,13 @@ export function ShellDialogs({
           onCancel={() => setCreateBotOpen(false)}
           onCreate={createBot}
           onImport={onImportFromCreate}
+        />
+      ) : null}
+
+      {createTeamOpen ? (
+        <CreateTeamDialog
+          onCancel={() => setCreateTeamOpen(false)}
+          onCreate={createTeam}
         />
       ) : null}
 

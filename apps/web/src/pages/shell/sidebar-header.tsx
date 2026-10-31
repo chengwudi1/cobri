@@ -43,6 +43,7 @@ export function SidebarHeader({
   navigate,
   setNewSpaceOpen,
   setCreateBotOpen,
+  setCreateTeamOpen,
 }: {
   mini?: boolean;
   createMenuOpen: boolean;
@@ -58,6 +59,7 @@ export function SidebarHeader({
   navigate: (path: string) => void;
   setNewSpaceOpen: (open: boolean) => void;
   setCreateBotOpen: (open: boolean) => void;
+  setCreateTeamOpen: (open: boolean) => void;
 }) {
   const { t } = useLingui();
   const hasWindowChrome = Boolean(desktopBridge());
@@ -148,6 +150,11 @@ export function SidebarHeader({
                   setCreateMenuOpen(false);
                   setMobileSidebarOpen(false);
                   navigate(`/app/${id}`);
+                }}
+                onCreateTeam={() => {
+                  setCreateMenuOpen(false);
+                  setMobileSidebarOpen(false);
+                  setCreateTeamOpen(true);
                 }}
                 onCreateGroup={() => {
                   setCreateMenuOpen(false);

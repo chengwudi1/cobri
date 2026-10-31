@@ -16,6 +16,7 @@ import {
   Gauge,
   LayoutDashboard,
   Link2,
+  ListTodo,
   LogOut,
   Plug,
   Settings,
@@ -42,6 +43,7 @@ type Props = {
   onLink?: (link: NavLink) => void;
   onArtifacts: () => void;
   onOverview?: () => void;
+  onTasks?: () => void;
   onSettings: () => void;
   onUsage: () => void;
   onLogOut: () => void;
@@ -69,6 +71,7 @@ export function SidebarFooter({
   onLink,
   onArtifacts,
   onOverview,
+  onTasks,
   onSettings,
   onUsage,
   onLogOut,
@@ -159,6 +162,16 @@ export function SidebarFooter({
               >
                 <LayoutDashboard className="text-muted-foreground" strokeWidth={1.75} />
                 <Trans>Overview</Trans>
+              </Button>
+            ) : null}
+            {onTasks ? (
+              <Button
+                variant="ghost"
+                className="h-9 w-full justify-start gap-2.5 font-normal"
+                onClick={onTasks}
+              >
+                <ListTodo className="text-muted-foreground" strokeWidth={1.75} />
+                <Trans>Tasks</Trans>
               </Button>
             ) : null}
             <Button

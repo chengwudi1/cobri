@@ -522,10 +522,15 @@ export function OverviewPage() {
   const memberIds = new Set(group.members.map((member) => member.botId));
   const teamBots = data.bots.filter((bot) => memberIds.has(bot.id));
   const teamIds = new Set(teamBots.map((bot) => bot.id));
+  const activeGroupIds = new Set(
+    data.groups.filter((candidate) => !candidate.archivedAt).map((candidate) => candidate.id),
+  );
+  const isTeamRun = (run: RunActivityRow) =>
+    teamIds.has(run.botId) && (run.groupId == null || activeGroupIds.has(run.groupId));
   const routines = data.routines.filter((routine) => teamIds.has(routine.botId));
-  const activeRuns = (active.data?.runs ?? []).filter((run) => teamIds.has(run.botId));
+  const activeRuns = (active.data?.runs ?? []).filter(isTeamRun);
   const waitingRuns = activeRuns.filter((run) => run.status === "waiting_input");
-  const recentRuns = (recent.data?.runs ?? []).filter((run) => teamIds.has(run.botId));
+  const recentRuns = (recent.data?.runs ?? []).filter(isTeamRun);
   const activeRoutines = routines.filter((routine) => routine.active).length;
   const usageModels = usage.data?.models
     ?.map((model) => `${model.provider}/${model.model}`)

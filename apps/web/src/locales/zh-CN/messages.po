@@ -833,6 +833,102 @@ msgstr "参数"
 msgid "Artifacts"
 msgstr "产物"
 
+#: src/pages/Tasks.tsx
+msgid "Tasks"
+msgstr "任务"
+
+#: src/pages/Tasks.tsx
+msgid "Who is doing what, where the output is, and what is waiting on you."
+msgstr "谁在做什么、产物在哪、卡在哪个审批。"
+
+#: src/pages/Tasks.tsx
+msgid "Back to chats"
+msgstr "返回聊天"
+
+#: src/pages/Tasks.tsx
+msgid "Doing now"
+msgstr "正在做"
+
+#: src/pages/Tasks.tsx
+msgid "Bots with an active run"
+msgstr "有 run 在执行的 Bot"
+
+#: src/pages/Tasks.tsx
+msgid "Waiting on you"
+msgstr "卡在你这里"
+
+#: src/pages/Tasks.tsx
+msgid "Approvals or input"
+msgstr "审批或输入"
+
+#: src/pages/Tasks.tsx
+msgid "Recent handoffs"
+msgstr "最近交接"
+
+#: src/pages/Tasks.tsx
+msgid "Bot-to-bot work"
+msgstr "Bot 之间的协作"
+
+#: src/pages/Tasks.tsx
+msgid "Files saved by bots"
+msgstr "Bot 保存的文件"
+
+#: src/pages/Tasks.tsx
+msgid "Active runs across the team"
+msgstr "团队里正在执行的 run"
+
+#: src/pages/Tasks.tsx
+msgid "Could not load runs"
+msgstr "无法加载运行"
+
+#: src/pages/Tasks.tsx
+msgid "No active runs right now."
+msgstr "现在没有正在执行的 run。"
+
+#: src/pages/Tasks.tsx
+msgid "Runs stopped at an approval or a question"
+msgstr "停在审批或提问上的 run"
+
+#: src/pages/Tasks.tsx
+msgid "Nothing is waiting on you."
+msgstr "没有卡在你这里的事项。"
+
+#: src/pages/Tasks.tsx
+msgid "Work passed between bots"
+msgstr "Bot 之间交接的工作"
+
+#: src/pages/Tasks.tsx
+msgid "No handoffs recently."
+msgstr "最近没有交接。"
+
+#: src/pages/Tasks.tsx
+msgid "Files saved by the team"
+msgstr "团队保存的文件"
+
+#: src/pages/Tasks.tsx
+msgid "No artifacts yet."
+msgstr "还没有产物。"
+
+#: src/pages/Tasks.tsx
+msgid "Could not load tasks"
+msgstr "无法加载任务"
+
+#: src/pages/Tasks.tsx
+msgid "No prompt"
+msgstr "无任务描述"
+
+#: src/pages/Tasks.tsx
+msgid "Handoff from another bot"
+msgstr "来自其他 Bot 的交接"
+
+#: src/pages/Tasks.tsx
+msgid "Unknown bot"
+msgstr "未知 Bot"
+
+#: src/pages/Tasks.tsx
+msgid "Loading artifacts"
+msgstr "正在加载产物"
+
 #: src/components/ApprovalRulesSettings.tsx
 msgid "Ask"
 msgstr "询问"
@@ -3857,6 +3953,34 @@ msgstr "新建群组"
 #: src/pages/shell/bot-picker.tsx
 msgid "New group chat"
 msgstr "新建群聊"
+
+#: src/pages/shell/bot-picker.tsx
+msgid "New team"
+msgstr "新建团队"
+
+#: src/pages/shell/create-team-dialog.tsx
+msgid "Create team"
+msgstr "创建团队"
+
+#: src/pages/shell/create-team-dialog.tsx
+msgid "Create the bots and their group in one step. You can connect apps afterward."
+msgstr "一次创建四个 Bot 和团队群，之后再连接应用。"
+
+#: src/pages/shell/create-team-dialog.tsx
+msgid "Loading templates"
+msgstr "正在加载模板"
+
+#: src/pages/shell/create-team-dialog.tsx
+msgid "Could not create team"
+msgstr "无法创建团队"
+
+#: src/pages/shell/create-team-dialog.tsx
+msgid "Could not load team templates"
+msgstr "无法加载团队模板"
+
+#: src/pages/shell/create-team-dialog.tsx
+msgid "Bots use their own computers and inherit the space model. Connect Gmail, Calendar, or CRM after creation to give them tools."
+msgstr "Bot 使用独立电脑并继承空间模型。创建后连接 Gmail、Calendar 或 CRM 即可使用工具。"
 
 #: src/pages/shell/chat-context.tsx
 msgid "New messages"

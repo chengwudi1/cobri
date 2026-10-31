@@ -9,7 +9,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "@rakazo/ui-web";
-import { Info, Lock, Plus, Users } from "lucide-react";
+import { Info, Lock, Plus, Users, UsersRound } from "lucide-react";
 import { useMemo, useState } from "react";
 import { IconTooltip } from "../../components/IconTooltip";
 
@@ -17,12 +17,14 @@ export function BotCreatePicker({
   bots,
   onCreateBot,
   onOpenBot,
+  onCreateTeam,
   onCreateGroup,
   onCreateSpace,
 }: {
   bots: Bot[];
   onCreateBot: () => void;
   onOpenBot: (botId: string) => void;
+  onCreateTeam: () => void;
   onCreateGroup: () => void;
   onCreateSpace: () => void;
 }) {
@@ -76,6 +78,17 @@ export function BotCreatePicker({
                 <Trans>New bot</Trans>
               </CommandItem>
             ) : null}
+            <CommandItem
+              value="create-team"
+              data-testid="create-new-team"
+              onSelect={() => onCreateTeam()}
+              className="gap-2"
+            >
+              <span className="flex size-[22px] shrink-0 items-center justify-center">
+                <UsersRound size={16} strokeWidth={1.8} aria-hidden="true" />
+              </span>
+              <Trans>New team</Trans>
+            </CommandItem>
             <CommandItem
               value="create-group"
               data-testid="create-new-group"
