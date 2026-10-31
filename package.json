@@ -30,6 +30,7 @@
     "test:canary": "tsx packages/testkit/src/cli/canary.ts",
     "test:pi": "vitest run packages/testkit/src/model-emulator.test.ts packages/testkit/src/pi-offline.test.ts",
     "test:evals": "tsx packages/testkit/src/cli/evals.ts",
+    "experience:test": "vitest run packages/core/src/experience.test.ts packages/adapters/src/experience-library.test.ts packages/adapters/src/experience-reflection.test.ts apps/api/src/experience.test.ts",
     "test:computer-replay": "tsx packages/testkit/src/cli/computer-replay.ts",
     "test:computer": "tsx packages/testkit/src/cli/computer.ts",
     "test:flows": "tsx packages/testkit/src/cli/flows.ts",

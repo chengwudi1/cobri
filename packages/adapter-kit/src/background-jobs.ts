@@ -38,6 +38,14 @@ const payloadSchemas = {
     spaceId: z.string().min(1),
     userId: z.string().min(1),
   }),
+  "experience.reflect": z.object({
+    spaceId: z.string().min(1),
+    userId: z.string().min(1),
+    botId: z.string().min(1),
+    sourceMessageId: z.string().min(1),
+    correction: z.string().min(1),
+    wrongProcess: z.string().min(1),
+  }),
 } satisfies { [Name in BackgroundJobName]: z.ZodType<BackgroundJobPayloads[Name]> };
 
 export function parseBackgroundJob(name: string, payload: unknown): BackgroundJob {

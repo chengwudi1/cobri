@@ -196,6 +196,7 @@ describe("builtin tools", () => {
         "archive_bot",
         "task_catalog",
         "skill_read",
+        "experience_read",
         "skill_create",
         "skill_update",
         "skill_delete",

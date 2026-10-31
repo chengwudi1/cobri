@@ -318,6 +318,7 @@ async function main() {
     runtime,
     secretStore: secrets,
     memoryProviders,
+    dataDir,
     deploymentModelKey,
     deploymentModelConfigured,
     messaging,

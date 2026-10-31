@@ -63,6 +63,8 @@ export * from "./e2b-sandbox.js";
 export * from "./elevenlabs-voice.js";
 export * from "./email-emulator.js";
 export * from "./executor.js";
+export * from "./experience-library.js";
+export * from "./experience-reflection.js";
 export * from "./expo-push.js";
 export * from "./fake-browser.js";
 export * from "./fake-sandbox.js";

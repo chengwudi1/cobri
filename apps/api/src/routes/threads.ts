@@ -18,6 +18,7 @@ import {
   touchGroupUpdatedAt,
 } from "@rakazo/db";
 import { getLogger } from "@rakazo/logging";
+import { maybeQueueExperienceReflection } from "../experience.js";
 import { assertTeachingSendAllowed } from "../taught-skills.js";
 import {
   isBackgroundRun,
@@ -163,7 +164,7 @@ export function threadsRoutes(ctx: RouterContext) {
         const deployment = setup.hasDeployment
           ? { provider: deps.env.defaultProvider, model: deps.env.defaultModel }
           : null;
-        return sendThreadMessage(
+        const result = await sendThreadMessage(
           {
             ...deps,
             imageAdmission: confirmingImages
@@ -181,6 +182,12 @@ export function threadsRoutes(ctx: RouterContext) {
             ? (runId) => releaseComputerControl(deps, context.actor, target.botId, "done", runId)
             : undefined,
         );
+        await maybeQueueExperienceReflection(deps, context.actor, target, input, result).catch(
+          (error: unknown) => {
+            getLogger().error("experience.reflect enqueue", error);
+          },
+        );
+        return result;
       }),
       react: authed.threads.react.handler(async ({ context, input }) => {
         const target = await resolveThreadTarget(deps.prisma, context.actor, input);

@@ -52,6 +52,7 @@ function handlers(): BackgroundJobHandlers {
     "cloud_agent.poll": vi.fn(async () => undefined),
     "push.receipt": vi.fn(async () => undefined),
     "suggestions.scan": vi.fn(async () => undefined),
+    "experience.reflect": vi.fn(async () => undefined),
   };
 }
 

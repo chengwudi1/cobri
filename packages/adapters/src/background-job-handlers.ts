@@ -20,6 +20,7 @@ import { expireComputerControl } from "./computer-control.js";
 import { scheduleComputerSleep, sleepComputerIfIdle } from "./computer-idle.js";
 import { performComputerUpdate } from "./computer-update.js";
 import type { createRunExecutor } from "./executor.js";
+import { reflectExperience, validateExperienceReflectionTarget } from "./experience-reflection.js";
 import type { ExpoPushProvider } from "./expo-push.js";
 import { compactHistory } from "./history-compaction.js";
 import type { MemoryProviderResolver } from "./memory-provider-factory.js";
@@ -61,6 +62,7 @@ export function createBackgroundJobHandlers(deps: {
   runtime: AgentRuntime;
   secretStore: SecretStore;
   memoryProviders: MemoryProviderResolver;
+  dataDir?: string;
   deploymentModelKey?: string;
   deploymentModelConfigured?: boolean;
   messaging?: MessagingSurface;
@@ -184,7 +186,11 @@ export function createBackgroundJobHandlers(deps: {
       await runAsTenant({ spaceId, userId }, async () => {
         try {
           const result = await generateSuggestions(
-            { prisma: deps.prisma, runtime: deps.runtime, resolveModel: deps.executor.resolveModel },
+            {
+              prisma: deps.prisma,
+              runtime: deps.runtime,
+              resolveModel: deps.executor.resolveModel,
+            },
             { spaceId, userId },
           );
           getLogger().info("suggestions.scan", {
@@ -200,6 +206,42 @@ export function createBackgroundJobHandlers(deps: {
             error: error instanceof Error ? error.message : String(error),
           });
           throw error;
+        }
+      });
+    },
+    "experience.reflect": async (payload) => {
+      const target = await runAsSystem("validate the experience reflection tenant", () =>
+        validateExperienceReflectionTarget(deps.prisma, payload),
+      );
+      if (!target.ok) {
+        getLogger().warn("experience.reflect.rejected", {
+          "space.id": payload.spaceId,
+          "user.id": payload.userId,
+          "bot.id": payload.botId,
+          "message.id": payload.sourceMessageId,
+          reason: target.reason,
+        });
+        return;
+      }
+      await runAsTenant(target.tenant, async () => {
+        const result = await reflectExperience(
+          {
+            prisma: deps.prisma,
+            runtime: deps.runtime,
+            resolveModel: deps.executor.resolveModel,
+            dataDir: deps.dataDir,
+          },
+          payload,
+        );
+        getLogger().info("experience.reflect", {
+          "space.id": payload.spaceId,
+          "user.id": payload.userId,
+          "message.id": payload.sourceMessageId,
+          status: result.status,
+          ...(result.status === "recorded" ? { file: result.file } : {}),
+        });
+        if (result.status === "skipped" && result.reason === "model_failed") {
+          throw new Error("experience reflection failed");
         }
       });
     },

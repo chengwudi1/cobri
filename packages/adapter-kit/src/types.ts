@@ -723,6 +723,15 @@ export interface BackgroundJobPayloads {
   "push.receipt": { userId: string; ticketId: string; tokenDigest: string };
   /** One tenant's periodic Primary Bot scan; the reconciler owns the cadence. */
   "suggestions.scan": { spaceId: string; userId: string };
+  /** One lightweight reflection after the user explicitly corrected a bot. */
+  "experience.reflect": {
+    spaceId: string;
+    userId: string;
+    botId: string;
+    sourceMessageId: string;
+    correction: string;
+    wrongProcess: string;
+  };
 }
 
 export type BackgroundJobName = keyof BackgroundJobPayloads;

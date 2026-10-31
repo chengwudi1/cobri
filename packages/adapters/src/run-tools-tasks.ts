@@ -2,6 +2,7 @@ import {
   desktopProtectionGuardMessage,
   protectedComputerLifecycleRefusal,
 } from "./desktop-command-guard.js";
+import { readExperienceFromPath } from "./experience-library.js";
 import type { ToolHandlers } from "./run-tool-gate.js";
 import {
   cancelScheduleFromTool,
@@ -275,6 +276,15 @@ export const taskTools: ToolHandlers = {
         .catch(() => undefined);
     }
     return result;
+  },
+  async experience_read(ctx, call) {
+    const { deps, run } = ctx;
+    return readExperienceFromPath({
+      dataDir: deps.dataDir,
+      spaceId: run.spaceId,
+      userId: run.userId,
+      relativePath: String(call.args.path ?? ""),
+    });
   },
   async skill_create(ctx, call) {
     const { deps, run } = ctx;

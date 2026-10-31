@@ -74,6 +74,7 @@ export const BUILTIN_TOOL_NAMES = [
   "end_call",
   "call_user",
   "skill_read",
+  "experience_read",
   "skill_create",
   "skill_update",
   "skill_delete",

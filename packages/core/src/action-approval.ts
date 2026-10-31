@@ -67,6 +67,7 @@ const UNATTENDED_SAFE_BUILTIN_TOOLS = new Set([
   "schedule_list",
   "scratchpad_list",
   "skill_read",
+  "experience_read",
   "web_fetch",
   "web_search",
 ]);
@@ -204,6 +205,7 @@ const OWN_STATE_RESULT_TOOLS = new Set([
   "scratchpad_update",
   "search_history",
   "skill_read",
+  "experience_read",
   "task_catalog",
   "write_file",
 ]);

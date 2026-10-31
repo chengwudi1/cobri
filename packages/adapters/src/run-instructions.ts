@@ -297,6 +297,7 @@ function toolUsageLine(parts: {
 // Ordering matters: stable blocks first, volatile ones last, so the prefix stays cacheable.
 export function userTurnInstructions(parts: {
   botInstructions: string;
+  experienceIndex?: string;
   groupContext: string | undefined;
   messagingContext: string | undefined;
   redactedMemoryContext: string | undefined;
@@ -321,6 +322,7 @@ export function userTurnInstructions(parts: {
 }): (string | undefined)[] {
   return [
     parts.botInstructions,
+    parts.experienceIndex,
     parts.historyRetrievalEnabled &&
     builtinOffered(parts.disabledBuiltinTools, "search_history") &&
     builtinOffered(parts.disabledBuiltinTools, "read_history")

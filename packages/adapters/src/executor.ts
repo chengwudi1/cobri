@@ -74,6 +74,7 @@ import {
 import { formatCurrentTimeInstruction } from "./current-time.js";
 import { resolveDeploymentModel } from "./deployment-model.js";
 import type { ExecutorDeps } from "./executor-deps.js";
+import { loadExperienceIndexGuidance } from "./experience-library.js";
 import type { FleetRun } from "./fleet-tools.js";
 import { loadBotGroupDirectory, loadGroupContext } from "./group-handoff.js";
 import {
@@ -1198,6 +1199,23 @@ export function createRunExecutor(deps: ExecutorDeps) {
               parsePlaybook(invokedSkill.playbook),
             )}\n\n${taskPrompt}`
           : taskPrompt;
+        let experienceIndex: string | undefined;
+        try {
+          experienceIndex = loadExperienceIndexGuidance({
+            dataDir: deps.dataDir,
+            spaceId: run.spaceId,
+            userId: run.userId,
+          });
+        } catch (error) {
+          getLogger().warn("experience.index_failed", { error: String(error) });
+        }
+        if (experienceIndex) {
+          getLogger().info("experience.index", {
+            "space.id": run.spaceId,
+            "user.id": run.userId,
+            "bot.id": bot.id,
+          });
+        }
         if (turnCheckpoint) {
           turnCheckpoint = restoreTurnCheckpointEffects(ctx, turnCheckpoint, {
             provider: runModelProvider,
@@ -1390,6 +1408,7 @@ export function createRunExecutor(deps: ExecutorDeps) {
               contextStrategy: deps.contextStrategy,
               instructions: userTurnInstructions({
                 botInstructions: runIdentityInstruction(bot, run.trigger),
+                experienceIndex,
                 groupContext,
                 messagingContext,
                 redactedMemoryContext: memoryContext
