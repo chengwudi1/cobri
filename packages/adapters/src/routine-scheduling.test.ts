@@ -31,6 +31,7 @@ function pendingTimerFixture(reuse = true) {
     spaceId: "space-1",
     botId: "bot-1",
     userId: "user-1",
+    name: "Check current work",
     prompt: "check current work",
     crons: ["* * * * *"],
     timezone: "UTC",
@@ -114,5 +115,20 @@ describe("recurring routine catch-up", () => {
       expect.objectContaining({ type: "routine.fired", runId: "new-1" }),
     );
     expect(enqueue).toHaveBeenLastCalledWith(expect.objectContaining({ name: "routine.wakeup" }));
+  });
+  it("frames a timer firing as a scheduled execution, not a new routine", async () => {
+    const { executor, tx, scheduledAt } = pendingTimerFixture(false);
+    await executor.wakeRoutine("routine-1", scheduledAt.toISOString());
+    expect(tx.task.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        prompt: expect.stringMatching(
+          /^This run was started by the scheduled routine "Check current work"\. Execute the task below now/,
+        ),
+      }),
+    });
+    const prompt = (tx.task.create.mock.calls[0] as unknown as [{ data: { prompt: string } }])[0]
+      .data.prompt;
+    expect(prompt).toContain("check current work");
+    expect(prompt).toContain("Do not create, update, or look up the routine itself.");
   });
 });

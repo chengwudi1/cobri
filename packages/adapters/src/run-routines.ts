@@ -112,6 +112,16 @@ async function notifyFailedRoutineRun(
   );
 }
 
+export function routineExecutionPrompt(
+  name: string,
+  prompt: string,
+  watchNote?: string,
+): string {
+  return watchNote
+    ? `${prompt}${watchNote}`
+    : `This run was started by the scheduled routine "${name}". Execute the task below now and report this run's result. Do not create, update, or look up the routine itself.\n\n${prompt}`;
+}
+
 export async function wakeRoutine(deps: ExecutorDeps, routineId: string, scheduledFor: string) {
   const scheduledAt = new Date(scheduledFor);
   if (!Number.isFinite(scheduledAt.getTime())) return;
@@ -181,9 +191,12 @@ export async function wakeRoutine(deps: ExecutorDeps, routineId: string, schedul
     spaceId: routine.spaceId,
     userId: routine.userId,
   });
-  const routinePrompt =
-    expandSkillReferencesInPrompt(routine.prompt, skillRecords) +
-    (watchTick?.run ? watchTick.note : "");
+  const expandedPrompt = expandSkillReferencesInPrompt(routine.prompt, skillRecords);
+  const routinePrompt = routineExecutionPrompt(
+    routine.name,
+    expandedPrompt,
+    watchTick?.run ? watchTick.note : undefined,
+  );
   const claimed = await deps.prisma.$transaction(async (tx) => {
     const updated = await tx.routine.updateMany({
       where: {

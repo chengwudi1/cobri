@@ -137,6 +137,7 @@ export * from "./release-watch.js";
 export * from "./remote-mcp.js";
 export * from "./resend-email.js";
 export * from "./routine-watch.js";
+export { routineExecutionPrompt } from "./run-routines.js";
 export * from "./run-secret.js";
 export * from "./run-wakeup.js";
 export * from "./sandbox-errors.js";

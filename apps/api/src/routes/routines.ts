@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 import { routineJobKey, routineWakeupJob, runContinueJob } from "@rakazo/adapter-kit";
 import {
   parseRoutineWatch,
+  routineExecutionPrompt,
   routineRunModelPin,
   stableStringify,
   validateRoutineWatch,
@@ -330,7 +331,10 @@ export function routinesRoutes(ctx: RouterContext) {
           if (existing) return { runId: existing.id };
         }
         const skillRecords = await agentSkills.listWithContent(context.actor);
-        const prompt = expandSkillReferencesInPrompt(routine.prompt, skillRecords);
+        const prompt = routineExecutionPrompt(
+          routine.name,
+          expandSkillReferencesInPrompt(routine.prompt, skillRecords),
+        );
         let run: { id: string };
         try {
           // Task + run must commit together so a nonce collision cannot leave an orphan queued Task.
