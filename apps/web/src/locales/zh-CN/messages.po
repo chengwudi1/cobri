@@ -6565,3 +6565,23 @@ msgstr "你的语音提供方额度已用完。"
 #: src/lib/user-error.ts
 msgid "Your voice provider key was rejected."
 msgstr "你的语音提供方拒绝了该密钥。"
+
+#: src/pages/Onboarding.tsx
+msgid "Choose how to start"
+msgstr "选择开始方式"
+
+#: src/pages/Onboarding.tsx
+msgid "Could not create the team"
+msgstr "无法创建团队"
+
+#: src/pages/Onboarding.tsx
+msgid "Create one bot first"
+msgstr "先创建一个 Bot"
+
+#: src/pages/Onboarding.tsx
+msgid "Start with the work assistant team"
+msgstr "从工作助理团队开始"
+
+#: src/pages/Onboarding.tsx
+msgid "The team option creates four bots and their group."
+msgstr "团队选项会创建四个 Bot 和对应的群。"

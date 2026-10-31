@@ -86,6 +86,7 @@ function providerOptionValue(provider: string, auth?: ProviderAuth): string {
 const FIRST_BOT_NAME = "Chief";
 const FIRST_BOT_SPAWN_KEY = "onboarding:first";
 const FIRST_BOT_LOCK = "rakazo:onboarding-first-bot";
+const ONBOARDING_TEAM_TEMPLATE = "work-assistant";
 
 /** Survives StrictMode remounts; concurrent first-bot creates share one in-flight attempt. */
 let firstBotEnsure: Promise<{ id: string }> | null = null;
@@ -148,6 +149,9 @@ export function OnboardingPage() {
   const { step: routeStep } = useParams();
   const linkedStep = routeStep === "survey" || routeStep === "model" ? routeStep : undefined;
   const [creatingBot, setCreatingBot] = useState(false);
+  const [creatingTeam, setCreatingTeam] = useState(false);
+  // An empty space picks a team or a single bot before anything is created.
+  const [botStart, setBotStart] = useState<"checking" | "choice" | "auto">("checking");
   const [surveyDone, setSurveyDone] = useState(false);
   const step = creatingBot ? "bot" : surveyDone ? "loading" : (linkedStep ?? "loading");
   const [billingEnabled, setBillingEnabled] = useState(false);
@@ -232,6 +236,28 @@ export function OnboardingPage() {
     setSurveyDone(false);
     goTo(afterSurvey);
   }, [surveyDone, afterSurvey]);
+
+  // Only a space with no bots gets the team choice; everyone else keeps the
+  // existing first-bot path.
+  useEffect(() => {
+    if (step !== "bot" || notImported) return;
+    if (importedBotRef.current) {
+      setBotStart("auto");
+      return;
+    }
+    let cancelled = false;
+    void rpc.bots
+      .list()
+      .then((bots) => {
+        if (!cancelled) setBotStart(bots.length === 0 ? "choice" : "auto");
+      })
+      .catch(() => {
+        if (!cancelled) setBotStart("auto");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [step, notImported]);
 
   function goTo(next: "survey" | "model" | "bot") {
     if (next === "bot") setCreatingBot(true);
@@ -559,12 +585,27 @@ export function OnboardingPage() {
   }
 
   useEffect(() => {
-    if (step !== "bot" || notImported) return;
+    if (step !== "bot" || notImported || botStart !== "auto") return;
     void createFirstBot();
-  }, [step]);
+  }, [step, notImported, botStart]);
 
-  // Loading, and creating the first bot, both wait on one spinner until the chat opens.
-  if (step === "loading" || (step === "bot" && !error)) return <PageLoading />;
+  async function createTeam() {
+    if (creatingTeam) return;
+    setCreatingTeam(true);
+    setError(null);
+    try {
+      const result = await rpc.teams.create({ templateId: ONBOARDING_TEAM_TEMPLATE });
+      navigate(`/app/g/${result.group.id}`);
+    } catch (err) {
+      setCreatingTeam(false);
+      setError(errorText(err, t`Could not create the team`));
+    }
+  }
+
+  // Loading, checking the space, and creating the first bot all wait on one spinner.
+  if (step === "loading" || (step === "bot" && botStart !== "choice" && !error)) {
+    return <PageLoading />;
+  }
 
   return (
     <div className="min-h-full bg-background px-6 py-12">
@@ -1089,12 +1130,41 @@ export function OnboardingPage() {
           </div>
         ) : null}
         {step === "bot" ? (
-          <div>
-            <p className="text-sm text-destructive">{error}</p>
-            <Button className="mt-4" onClick={() => void createFirstBot()}>
-              <Trans>Try again</Trans>
-            </Button>
-          </div>
+          botStart === "choice" ? (
+            <div data-testid="onboarding-bot-start">
+              <h1 className="text-[32px] font-medium text-foreground">
+                <Trans>Choose how to start</Trans>
+              </h1>
+              <p className="mt-3 text-sm text-muted-foreground">
+                <Trans>The team option creates four bots and their group.</Trans>
+              </p>
+              <div className="mt-6 flex flex-col gap-3">
+                <Button
+                  data-testid="onboarding-start-team"
+                  disabled={creatingTeam}
+                  onClick={() => void createTeam()}
+                >
+                  <Trans>Start with the work assistant team</Trans>
+                </Button>
+                <Button
+                  variant="outline"
+                  data-testid="onboarding-start-single"
+                  disabled={creatingTeam}
+                  onClick={() => setBotStart("auto")}
+                >
+                  <Trans>Create one bot first</Trans>
+                </Button>
+              </div>
+              {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
+            </div>
+          ) : (
+            <div>
+              <p className="text-sm text-destructive">{error}</p>
+              <Button className="mt-4" onClick={() => void createFirstBot()}>
+                <Trans>Try again</Trans>
+              </Button>
+            </div>
+          )
         ) : null}
       </div>
     </div>
